@@ -1,0 +1,12 @@
+K_epochs: 4
+env_name: Cooperative_Navigation
+eps_clip: 0.2
+exp_name: cn-baseline-agents_3-rs_24
+gamma: 0.95
+log_dir: logs/
+lr: 0.01
+max_episodes: 30000
+max_steps: 25
+n_latent_var: 64
+random_seed: 24
+update_timestep: 2000

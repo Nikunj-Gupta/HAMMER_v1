@@ -1,0 +1,26 @@
+global:
+  K_epochs: 80
+  action_std: 0.5
+  hidden_nodes: 64
+  lr: 0.0003
+  update_timestep: 4000
+local:
+  K_epochs: 80
+  action_std: 0.5
+  hidden_nodes: 64
+  lr: 0.0003
+  update_timestep: 4000
+main:
+  eps_clip: 0.2
+  exp_name: mw-baseline-agents_5-rs_11
+  gamma: 0.95
+  log_dir: logs/
+  log_interval: 20
+  main: 0
+  max_episodes: 10000
+  max_timesteps: 25
+  message_len: 15
+  n_walkers: 5
+  random_seed: 11
+  save_dir: save-dir/
+  save_interval: 50

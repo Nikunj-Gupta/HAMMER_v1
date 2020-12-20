@@ -1,0 +1,26 @@
+main:
+  env_name: "Cooperative_Navigation"
+  exp_name: "main-complete_state-previous_actions-initial"
+  log_dir: "logs/"
+  save_dir: "save-dir/"
+  render: False
+  solved_reward: 0.0  # stop training if avg_reward > solved_reward
+  log_interval: 20  # print avg reward in the interval
+  max_episodes: 500  # max training episodes
+  max_timesteps: 25  # max timesteps in one episode
+  random_seed: 10
+  gamma: 0.95  # discount factor
+  eps_clip: 0.2  # clip parameter for PPO
+  save_interval: 50 # save model in the interval
+  message_len: 4
+local:
+  n_latent_var: 64  # number of variables in hidden layer
+  update_timestep: 2000  # update policy every n timesteps
+  lr: 0.01
+  K_epochs: 4  # update policy for K epochs
+global:
+  update_timestep: 4000  # update policy every n timesteps
+  action_std: 0.5  # constant std for action distribution (Multivariate Normal)
+  K_epochs: 80  # update policy for K epochs
+  lr: 0.0003  # parameters for Adam optimizer
+  hidden_nodes: 64
