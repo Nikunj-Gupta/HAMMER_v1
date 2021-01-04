@@ -3,8 +3,7 @@ import argparse
 from pettingzoo.sisl import multiwalker_v2
 import numpy as np
 
-from ppo import PPO as LocalPolicy
-from ppo_cont import PPO as GlobalPolicy
+from ppo_cont import PPO as Policy
 from ppo import Memory
 from utils import read_config
 
@@ -41,7 +40,7 @@ global_memory = Memory()
 betas = (0.9, 0.999)
 
 local_state_dim = obs_dim+config["main"]["message_len"] if MAIN else obs_dim
-local_agent = GlobalPolicy(
+local_agent = Policy(
         state_dim=local_state_dim,
         action_dim=action_dim,
         action_std=config["global"]["action_std"],
@@ -52,7 +51,7 @@ local_agent = GlobalPolicy(
         eps_clip=config["main"]["eps_clip"],
         hidden_nodes=config["global"]["hidden_nodes"]
     )
-global_agent = GlobalPolicy(
+global_agent = Policy(
         state_dim=(obs_dim * n_walkers) + (action_dim * n_walkers),  # all local observations concatenated + all agents' previous actions
         action_dim=config["main"]["message_len"],
         action_std=config["global"]["action_std"],
