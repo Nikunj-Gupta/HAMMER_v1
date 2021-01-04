@@ -1,6 +1,6 @@
 import argparse
 
-from pettingzoo.sisl import multiwalker_v2
+from pettingzoo.sisl import multiwalker_v5
 import numpy as np
 
 from ppo_cont import PPO as Policy
@@ -12,17 +12,18 @@ import os
 import torch
 
 parser = argparse.ArgumentParser("Reinforcement Learning experiments: Config Generation")
-parser.add_argument("--config", type=str, default=None, help="config file name")
+parser.add_argument("--config", type=str, default="configs/random_seed_runs/mw-baseline-agents_5-rs_15.yaml", help="config file name")
 parser.add_argument("--load", type=bool, default=False, help="load true / false")
 args = parser.parse_args()
 config = read_config(args.config)
 
 n_walkers = config["main"]["n_walkers"]
-env = multiwalker_v2.env(n_walkers=n_walkers, position_noise=1e-3, angle_noise=1e-3,
-                         forward_reward=1.0, fall_reward=-100.0, drop_reward=-100.0,
-                         terminate_on_fall=True, max_frames=500)
+env = multiwalker_v5.env(n_walkers=n_walkers, position_noise=1e-3, angle_noise=1e-3,
+                         forward_reward=1.0, fall_reward=-100.0, terminate_reward=-100.0,
+                         terminate_on_fall=True, max_cycles=500)
 
 MAIN = config["main"]["main"]
+env.reset()
 obs_dim = env.observation_spaces[env.agents[0]].shape[0]
 action_dim = env.action_spaces[env.agents[0]].shape[0]
 
@@ -64,7 +65,9 @@ global_agent = Policy(
     )
 
 prev_actions = np.random.uniform(-1, 1, action_dim * n_walkers)
-global_agent_state = [env.reset() for i in range(n_walkers)]
+env.reset()
+obs, _, _, _ = env.last()
+global_agent_state = [obs for i in range(n_walkers)]
 global_agent_state = np.array(global_agent_state).reshape((-1,))
 global_agent_state = np.concatenate([global_agent_state, prev_actions])
 global_agent_next_state = []
@@ -75,8 +78,6 @@ i_episode = 0
 timestep = 0
 ep_rew = 0
 ep_rew_array = []
-
-obs = env.reset()
 
 episodes = config["main"]["max_episodes"]
 for agent in env.agent_iter():
@@ -89,7 +90,7 @@ for agent in env.agent_iter():
     if i_episode==episodes:
         break
 
-    reward, done, info = env.last()
+    obs, reward, done, info = env.last()
     ep_rew += reward
 
     global_memory.rewards.append(reward)
@@ -106,7 +107,7 @@ for agent in env.agent_iter():
     global_agent_next_state.append(obs)
     prev_actions.append(action)
 
-    obs = env.step(action)
+    env.step(action)
 
     if agent == env.agents[-1]:
         global_agent_next_state = np.array(global_agent_next_state).reshape((-1,))
@@ -148,7 +149,7 @@ for agent in env.agent_iter():
         writer.add_scalar('Episode Reward', ep_rew, i_episode)
         ep_rew=0
         timestep=0
-        obs = env.reset()
+        env.reset()
         global_agent_next_state = []
         prev_actions = []
     print('\nEpisode {} \t  Episode reward: {}\n'.format(i_episode, ep_rew))

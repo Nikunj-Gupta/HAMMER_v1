@@ -1,3 +1,17 @@
+## Setup:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## How to run:
+MultiWalker:
+```bash
+# source .venv/bin/activate
+python3 multiagent
+```
+
 ## File descriptions:
 - ppo.py : Contains implementation of PPO for discrete action space environments.
 - ppo_cont.py : Contains implementation of PPO for continuous action space environments.
