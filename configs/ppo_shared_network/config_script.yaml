@@ -1,6 +1,6 @@
 env_name: "Cooperative_Navigation"
 exp_name: ""
-log_dir: "logs/"
+logdir: "logs/"
 max_episodes: 30000
 max_steps: 25
 n_latent_var: 64  # number of variables in hidden layer

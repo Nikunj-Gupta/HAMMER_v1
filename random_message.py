@@ -18,7 +18,7 @@ def main(config=None):
     ############## Hyperparameters ##############
     env_name = config["env_name"]
     exp_name = config["exp_name"]
-    writer = SummaryWriter(log_dir=os.path.join(config["log_dir"], exp_name))
+    writer = SummaryWriter(logdir=os.path.join(config["logdir"], exp_name))
     # creating environment
     # env = gym.make(env_name)
     env = make_env(scenario_name="simple_spread", benchmark=False)

@@ -14,7 +14,7 @@ main:
   eps_clip: 0.2
   exp_name: mw-main-agents_5-rs_10-meslen8
   gamma: 0.95
-  log_dir: logs/
+  logdir: logs/
   log_interval: 20
   main: 1
   max_episodes: 10000

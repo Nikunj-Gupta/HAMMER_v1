@@ -1,7 +1,7 @@
 main:
   env_name: "Cooperative_Navigation"
   exp_name: "main-complete_state-previous_actions-message_len_4-150000eps"
-  log_dir: "logs/"
+  logdir: "logs/"
   save_dir: "save-dir/"
   render: False
   solved_reward: 0.0  # stop training if avg_reward > solved_reward

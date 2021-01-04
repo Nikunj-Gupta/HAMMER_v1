@@ -28,7 +28,7 @@ def run(config=None):
         env.seed(random_seed)
         np.random.seed(random_seed)
 
-    writer = SummaryWriter(log_dir=os.path.join(config["main"]["log_dir"], config["main"]["exp_name"]))
+    writer = SummaryWriter(logdir=os.path.join(config["main"]["logdir"], config["main"]["exp_name"]))
     local_memory = Memory()
     global_memory = Memory()
 
