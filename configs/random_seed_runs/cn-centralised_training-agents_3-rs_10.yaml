@@ -3,7 +3,7 @@ env_name: Cooperative_Navigation
 eps_clip: 0.2
 exp_name: cn-centralised_training-agents_3-rs_10
 gamma: 0.95
-log_dir: logs/
+logdir: logs/
 lr: 0.01
 max_episodes: 30000
 max_steps: 25

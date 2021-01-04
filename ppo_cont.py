@@ -166,7 +166,7 @@ def main():
     random_seed = None
     #############################################
 
-    writer = SummaryWriter(log_dir=os.path.join("logs/ppo_/", exp_name))
+    writer = SummaryWriter(logdir=os.path.join("logs/ppo_/", exp_name))
     # creating environment
     env = gym.make(env_name)
     state_dim = env.observation_space.shape[0]

@@ -14,7 +14,7 @@ main:
   eps_clip: 0.2
   exp_name: cn-main-agents_5-rs_16
   gamma: 0.95
-  log_dir: logs/
+  logdir: logs/
   log_interval: 20
   max_episodes: 30000
   max_timesteps: 25

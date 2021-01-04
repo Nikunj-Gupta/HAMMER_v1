@@ -1,7 +1,7 @@
 main:
   exp_name: "multiwalker-main-walkers5-meslen10"
   n_walkers: 5
-  log_dir: "logs/"
+  logdir: "logs/"
   save_dir: "save-dir/"
   log_interval: 20    # print avg reward in the interval
   max_episodes: 20000 # max training episodes

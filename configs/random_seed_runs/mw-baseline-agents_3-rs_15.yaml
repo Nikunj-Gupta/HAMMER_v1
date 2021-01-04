@@ -14,7 +14,7 @@ main:
   eps_clip: 0.2
   exp_name: mw-baseline-agents_3-rs_15
   gamma: 0.95
-  log_dir: logs/
+  logdir: logs/
   log_interval: 20
   main: 0
   max_episodes: 10000
