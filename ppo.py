@@ -10,8 +10,6 @@ from tensorboardX import SummaryWriter
 from utils import read_config
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
-device = torch.device("cpu")
 
 class Memory:
     def __init__(self):

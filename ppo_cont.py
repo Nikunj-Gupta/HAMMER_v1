@@ -8,9 +8,6 @@ import numpy as np
 from tensorboardX import SummaryWriter
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
-device = torch.device("cpu")
-
 
 class Memory:
     def __init__(self):
