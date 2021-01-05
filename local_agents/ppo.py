@@ -50,7 +50,7 @@ class ActorCritic(nn.Module):
     def forward(self):
         raise NotImplementedError
 
-    def act(self, state, memory):
+    def act(self, state):
         action_mean = self.actor(state)
         cov_mat = torch.diag(self.action_var).to(device)
 
@@ -58,11 +58,7 @@ class ActorCritic(nn.Module):
         action = dist.sample()
         action_logprob = dist.log_prob(action)
 
-        memory.states.append(state)
-        memory.actions.append(action)
-        memory.logprobs.append(action_logprob)
-
-        return action.detach()
+        return action.detach(), action_logprob.detach()
 
     def evaluate(self, state, action):
         action_mean = self.actor(state)
@@ -95,9 +91,10 @@ class PPO:
 
         self.MseLoss = nn.MSELoss()
 
-    def select_action(self, state, memory):
+    def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
-        return self.policy_old.act(state, memory).cpu().data.numpy().flatten()
+        action, action_logprobs = self.policy_old.act(state)
+        return action.cpu().data.numpy().flatten(), action_logprobs.cpu().data.numpy().flatten()
 
     def load(self, filename):
         self.policy.load_state_dict(torch.load(filename))
@@ -241,3 +238,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
