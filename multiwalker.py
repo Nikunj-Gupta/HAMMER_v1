@@ -78,9 +78,7 @@ agents = [agent for agent in parallel_env.agents]
 # Training loop, starting count from 1:
 for timestep in count(1):
     # Before running through each agent, we get messages for them, from the global agent.
-    global_agent_output, global_agent_log_prob = global_messenger.select_action(global_agent_state)
-    global_agent_output = np.array(global_agent_output).reshape(n_agents, -1) ###################################################################! THIS STATEMENT
-    
+    global_agent_output, global_agent_log_prob = global_messenger.select_action(global_agent_state)    
 
     for i, agent in enumerate(agents):
         # "MAIN" decides whether the local agents take in any input from the global agent.

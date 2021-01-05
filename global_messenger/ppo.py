@@ -103,7 +103,7 @@ class PPO:
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
         action, action_logprobs = self.policy_old.act(state)
-        return action.cpu().data.numpy().flatten(), action_logprobs.cpu().data.numpy().flatten()
+        return action.cpu().data.numpy().squeeze(), action_logprobs.cpu().data.numpy().squeeze()
 
     def load(self, filename):
         self.policy.load_state_dict(torch.load(filename))
