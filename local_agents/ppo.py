@@ -100,7 +100,12 @@ class PPO:
         self.policy.load_state_dict(torch.load(filename))
 
     def update(self, local_memory):
-        for i in range(len(local_memory)):
+        rewards_list = []
+        old_states_list = []
+        old_actions_list = []
+        old_logprobs_list = []
+        n_agents = len(local_memory)
+        for i in range(n_agents):
             # Monte Carlo estimate of rewards:
             rewards = []
             discounted_reward = 0
@@ -114,24 +119,27 @@ class PPO:
             rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
             rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
 
-            # convert list to tensor
-            old_states = torch.tensor(local_memory[i].states).to(device).detach()
-            old_actions = torch.tensor(local_memory[i].actions).to(device).detach()
-            old_logprobs = torch.tensor(local_memory[i].logprobs).to(device).detach()
-
-            # Optimize policy for K epochs:
-            for _ in range(self.K_epochs):
+            # making a list for updates.
+            rewards_list.append(rewards)
+            old_states_list.append(torch.squeeze(torch.tensor(local_memory[i].states).to(device), 1).detach())
+            old_actions_list.append(torch.squeeze(torch.tensor(local_memory[i].actions).to(device), 1).detach())
+            old_logprobs_list.append(torch.squeeze(torch.tensor(local_memory[i].logprobs).to(device), 1).detach())
+        
+        # Optimize policy for K epochs:
+        for _ in range(self.K_epochs):
+            # For each agent:
+            for i in range(n_agents):
                 # Evaluating old actions and values :
-                logprobs, state_values, dist_entropy = self.policy.evaluate(old_states, old_actions)
+                logprobs, state_values, dist_entropy = self.policy.evaluate(old_states_list[i], old_actions_list[i])
 
                 # Finding the ratio (pi_theta / pi_theta__old):
-                ratios = torch.exp(logprobs - old_logprobs.detach())
+                ratios = torch.exp(logprobs - old_logprobs_list[i].detach())
 
                 # Finding Surrogate Loss:
-                advantages = rewards - state_values.detach()
+                advantages = rewards_list[i] - state_values.detach()
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-                loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
+                loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards_list[i]) - 0.01 * dist_entropy
 
                 # take gradient step
                 self.optimizer.zero_grad()
