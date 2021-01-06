@@ -1,0 +1,15 @@
+Box2D
+cloudpickle
+future
+gym
+numpy
+PettingZoo
+Pillow
+protobuf
+pyglet
+PyYAML
+scipy
+six
+tensorboardX
+torch
+typing-extensions
