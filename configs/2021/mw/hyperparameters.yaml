@@ -3,13 +3,13 @@ global:
   action_std: 0.5
   hidden_nodes: 64
   lr: 0.0003
-  update_timestep: 4000
+  update_timestep: 1000
 local:
   K_epochs: 80
   action_std: 0.5
   hidden_nodes: 64
   lr: 0.0003
-  update_timestep: 4000
+  update_timestep: 3000
 main:
   eps_clip: 0.2
   gamma: 0.95
