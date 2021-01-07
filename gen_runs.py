@@ -87,7 +87,7 @@ for seed in range(9, 11):
                 "--config", config, 
                 "--hammer", "1", 
                 "--expname", expname, 
-                "nwalkers", str(nagent), 
+                "--nwalkers", str(nagent), 
                 "--maxepisodes", "100000", 
                 "--randomseed", str(seed), 
                 "--meslen", str(meslen)
@@ -109,7 +109,7 @@ for seed in range(9, 11):
             "--config", config, 
             "--hammer", "0", 
             "--expname", expname, 
-            "nwalkers", str(nagent), 
+            "--nwalkers", str(nagent), 
             "--maxepisodes", "100000", 
             "--randomseed", str(seed), 
         ]) 
