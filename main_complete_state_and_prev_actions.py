@@ -109,11 +109,12 @@ def run(args):
                 local_memory[i].rewards.append(reward[i])
                 local_memory[i].is_terminals.append(done[i]) 
            
-            global_memory.states.append(global_agent_state)
-            global_memory.actions.append(global_agent_output)
-            global_memory.logprobs.append(global_agent_log_prob)
-            global_memory.rewards.append([reward[agent] for agent in range(NUM_AGENTS)]) 
-            global_memory.is_terminals.append([done[agent] for agent in range(NUM_AGENTS)]) 
+            if MAIN: 
+                global_memory.states.append(global_agent_state)
+                global_memory.actions.append(global_agent_output)
+                global_memory.logprobs.append(global_agent_log_prob)
+                global_memory.rewards.append([reward[agent] for agent in range(NUM_AGENTS)]) 
+                global_memory.is_terminals.append([done[agent] for agent in range(NUM_AGENTS)]) 
 
             
             # update if its time
@@ -121,7 +122,7 @@ def run(args):
                 local_agent.update(local_memory) 
                 [mem.clear_memory() for mem in local_memory]
 
-            if global_timestep % config["global"]["update_timestep"] == 0:
+            if MAIN and global_timestep % config["global"]["update_timestep"] == 0:
                 global_agent.update(global_memory)
                 global_memory.clear_memory()
 
@@ -136,7 +137,7 @@ def run(args):
 
 
         if i_episode % args.saveinterval == 0:
-            if not os.path.exists(os.path.join(args.save_dir, args.expname)):
+            if not os.path.exists(os.path.join(args.savedir, args.expname)):
                 os.makedirs(os.path.join(args.savedir, args.expname))
             torch.save(local_agent.policy.state_dict(), os.path.join(args.savedir, args.expname, "local_agent.pth"))
             torch.save(global_agent.policy.state_dict(), os.path.join(args.savedir, args.expname, "global_agent.pth"))
@@ -151,18 +152,22 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default=None, help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
+
+    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxtimesteps", type=int, default=25)
+
+    parser.add_argument("--meslen", type=int, default=4, help="message length")
+    parser.add_argument("--randomseed", type=int, default=10)
+    parser.add_argument("--render", type=bool, default=False)
+
+    parser.add_argument("--loginterval", type=int, default=20)
+    parser.add_argument("--saveinterval", type=int, default=50)
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
-    parser.add_argument("--render", type=bool, default=False)
-    parser.add_argument("--loginterval", type=int, default=20)
-    parser.add_argument("--maxtimesteps", type=int, default=25)
-    parser.add_argument("--randomseed", type=int, default=10)
-    parser.add_argument("--saveinterval", type=int, default=50)
-    parser.add_argument("--meslen", type=int, default=4, help="message length")
-    parser.add_argument("--hammer", type=int, default=1, help="1 for hammerl; 0 for IL")
     
 
-    args = parser.parse_args()
+    args = parser.parse_args() 
+    print(args.savedir)
     run(args=args)
