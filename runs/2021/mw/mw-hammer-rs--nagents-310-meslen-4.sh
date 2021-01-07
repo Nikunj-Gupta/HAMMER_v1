@@ -6,4 +6,4 @@
 #SBATCH --time=00-30:00
 #SBATCH --account=def-mtaylor3
 tensorboard --logdir=logs/ --host 0.0.0.0 &
-python ../../../multiwalker.py --config ../../../configs/2021/mw/hyperparameters.yaml --hammer 1 --expname mw-hammer-rs--nagents-310-meslen-4 nwalkers 3 --maxepisodes 100000 --randomseed 10 --meslen 4
+python ../../../multiwalker.py --config ../../../configs/2021/mw/hyperparameters.yaml --hammer 1 --expname mw-hammer-rs--nagents-310-meslen-4 --nwalkers 3 --maxepisodes 100000 --randomseed 10 --meslen 4
