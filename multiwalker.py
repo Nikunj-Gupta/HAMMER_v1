@@ -28,6 +28,7 @@ MAIN = config["main"]["main"]
 parallel_env.reset()
 obs_dim = parallel_env.observation_spaces[parallel_env.agents[0]].shape[0]
 action_dim = parallel_env.action_spaces[parallel_env.agents[0]].shape[0]
+agent_action_space = parallel_env.action_spaces[parallel_env.agents[0]]
 
 random_seed = config["main"]["random_seed"]
 if random_seed:
@@ -91,7 +92,7 @@ for timestep in count(1):
         local_memory[i].logprobs.append(local_log_prob)
     
     # Creating a format for the actions in parallel_env:
-    actions = {agent : local_memory[i].actions[-1] for i, agent in enumerate(agents)}
+    actions = {agent : np.clip(local_memory[i].actions[-1], agent_action_space.low, agent_action_space.high) for i, agent in enumerate(agents)}
     next_obs, rewards, is_terminals, infos = parallel_env.step(actions)
 
     # Storing in rewards, is_terminals in local_memory, :
@@ -126,7 +127,7 @@ for timestep in count(1):
         writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/n_agents, i_episode)
         timestep=0
         obs = parallel_env.reset()
-        print('\nEpisode {} \t  Avg reward for each agent, after an episode: {}\n'.format(i_episode, episode_rewards/n_agents))
+        print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/n_agents))
         episode_rewards = 0
 
     # save every 50 episodes
