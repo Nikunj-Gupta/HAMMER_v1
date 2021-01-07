@@ -6,4 +6,4 @@
 #SBATCH --time=48:00:00
 #SBATCH --account=def-mtaylor3
 tensorboard --logdir=logs/ --host 0.0.0.0 &
-python ../../main_complete_state_and_prev_actions.py  --config ../../configs/2021/cn/hyperparams.yaml --randomseed 24 --expname hammer-trial-1 --meslen 1 --hammer 1 
+python3 ../../../main_complete_state_and_prev_actions.py  --config ../../../configs/2021/cn/hyperparams.yaml --expname test --hammer 1 --maxepisodes 50000 --meslen 2 
