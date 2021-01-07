@@ -15,35 +15,53 @@ import torch
 
 parser = argparse.ArgumentParser("Reinforcement Learning experiments: Config Generation")
 parser.add_argument("--config", type=str, default="configs/random_seed_runs/mw-baseline-agents_5-rs_15.yaml", help="config file name")
-parser.add_argument("--load", type=bool, default=False, help="load true / false")
+parser.add_argument("--load", type=bool, default=False, help="load true / false") 
+
+parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL") 
+parser.add_argument("--nwalkers", type=int, default=3) 
+parser.add_argument("--expname", type=str, default=None)
+
+parser.add_argument("--maxepisodes", type=int, default=30000) 
+parser.add_argument("--maxtimesteps", type=int, default=25)
+
+parser.add_argument("--meslen", type=int, default=4, help="message length")
+parser.add_argument("--randomseed", type=int, default=10)
+parser.add_argument("--render", type=bool, default=False)
+
+parser.add_argument("--loginterval", type=int, default=20)
+parser.add_argument("--saveinterval", type=int, default=50)
+parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
+parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
+    
+
 args = parser.parse_args()
 config = read_config(args.config)
 
-n_agents = config["main"]["n_walkers"]
+n_agents = args.nwalkers
 parallel_env = multiwalker_v5.parallel_env(n_walkers=n_agents, position_noise=1e-3, angle_noise=1e-3,
                                 forward_reward=1.0, fall_reward=-100.0, terminate_reward=-100.0,
                                 terminate_on_fall=True, max_cycles=500)
 
-MAIN = config["main"]["main"]
+MAIN = args.hammer
 parallel_env.reset()
 obs_dim = parallel_env.observation_spaces[parallel_env.agents[0]].shape[0]
 action_dim = parallel_env.action_spaces[parallel_env.agents[0]].shape[0]
 agent_action_space = parallel_env.action_spaces[parallel_env.agents[0]]
 
-random_seed = config["main"]["random_seed"]
+random_seed = args.randomseed
 if random_seed:
     print("Random Seed: {}".format(random_seed))
     torch.manual_seed(random_seed)
     parallel_env.seed(random_seed)
     np.random.seed(random_seed)
 
-writer = SummaryWriter(logdir=os.path.join(config["main"]["logdir"], config["main"]["exp_name"]))
+writer = SummaryWriter(logdir=os.path.join(args.logdir, args.expname))
 local_memory = [Memory() for _ in range(n_agents)]
 global_memory = Memory()
 
 betas = (0.9, 0.999)
 
-local_state_dim = obs_dim+config["main"]["message_len"] if MAIN else obs_dim
+local_state_dim = obs_dim+args.meslen if MAIN else obs_dim
 local_agent = Local_Agent(
         state_dim=local_state_dim,
         action_dim=action_dim,
@@ -57,7 +75,7 @@ local_agent = Local_Agent(
     )
 global_messenger = Global_Messenger(
         state_dim=(obs_dim * n_agents) + (action_dim * n_agents),  # all local observations concatenated + all agents' previous actions
-        action_dim=config["main"]["message_len"],
+        action_dim=args.meslen,
         n_agents=n_agents,
         action_std=config["global"]["action_std"],
         lr=config["global"]["lr"],
@@ -131,15 +149,15 @@ for timestep in count(1):
         episode_rewards = 0
 
     # save every 50 episodes
-    if i_episode % config["main"]["save_interval"] == 0:
-        if not os.path.exists(os.path.join(config["main"]["save_dir"], config["main"]["exp_name"])):
-            os.makedirs(os.path.join(config["main"]["save_dir"], config["main"]["exp_name"]))
+    if i_episode % args.saveinterval == 0:
+        if not os.path.exists(os.path.join(args.savedir, args.expname)):
+            os.makedirs(os.path.join(args.savedir, args.expname))
         torch.save(local_agent.policy.state_dict(),
-                   os.path.join(config["main"]["save_dir"], config["main"]["exp_name"], "local_agent.pth"))
+                   os.path.join(args.savedir, args.expname, "local_agent.pth"))
         torch.save(global_messenger.policy.state_dict(),
-                   os.path.join(config["main"]["save_dir"], config["main"]["exp_name"], "global_messenger.pth"))
+                   os.path.join(args.savedir, args.expname, "global_messenger.pth"))
     
-    if i_episode == config["main"]["max_episodes"]:
+    if i_episode == args.maxepisodes:
         break
     
     # Update global_agent_state here:
