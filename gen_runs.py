@@ -6,7 +6,7 @@ fixed_text = "#!/bin/bash\n"\
                     "#SBATCH --gres=gpu:2\n"\
                     "#SBATCH --ntasks-per-node=32\n"\
                     "#SBATCH --mem=127000M\n"\
-                    "#SBATCH --time=2:00:00\n"\
+                    "#SBATCH --time=00-30:00\n"\
                     "#SBATCH --account=def-mtaylor3\n"\
                     "tensorboard --logdir=logs/ --host 0.0.0.0 &\n" 
 
@@ -30,6 +30,17 @@ for seed in range(9, 11):
         ]) 
         with open(os.path.join("runs/2021/cn", expname + ".sh"), "w") as f:
             f.write(fixed_text + command)
+
+
+fixed_text = "#!/bin/bash\n"\
+                    "#SBATCH --nodes=1\n"\
+                    "#SBATCH --gres=gpu:2\n"\
+                    "#SBATCH --ntasks-per-node=32\n"\
+                    "#SBATCH --mem=127000M\n"\
+                    "#SBATCH --time=00-06:00\n"\
+                    "#SBATCH --account=def-mtaylor3\n"\
+                    "tensorboard --logdir=logs/ --host 0.0.0.0 &\n" 
+
 
 # IL on Cooperative Navigation 
 for seed in range(9, 11): 
