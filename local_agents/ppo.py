@@ -32,18 +32,18 @@ class ActorCritic(nn.Module):
         self.actor = nn.Sequential(
             nn.Linear(state_dim, hidden_nodes),
             nn.Tanh(),
-            nn.Linear(hidden_nodes, hidden_nodes),
+            nn.Linear(hidden_nodes, 32),
             nn.Tanh(),
-            nn.Linear(hidden_nodes, action_dim),
+            nn.Linear(32, action_dim),
             nn.Tanh()
         )
         # critic
         self.critic = nn.Sequential(
             nn.Linear(state_dim, hidden_nodes),
             nn.Tanh(),
-            nn.Linear(hidden_nodes, hidden_nodes),
+            nn.Linear(hidden_nodes, 32),
             nn.Tanh(),
-            nn.Linear(hidden_nodes, 1)
+            nn.Linear(32, 1)
         )
         self.action_var = torch.full((action_dim,), action_std * action_std).to(device)
 
@@ -121,9 +121,9 @@ class PPO:
 
             # making a list for updates.
             rewards_list.append(rewards)
-            old_states_list.append(torch.squeeze(torch.tensor(local_memory[i].states).to(device), 1).detach())
-            old_actions_list.append(torch.squeeze(torch.tensor(local_memory[i].actions).to(device), 1).detach())
-            old_logprobs_list.append(torch.squeeze(torch.tensor(local_memory[i].logprobs).to(device), 1).detach())
+            old_states_list.append(torch.squeeze(torch.tensor(local_memory[i].states, dtype=torch.float32).to(device), 1).detach())
+            old_actions_list.append(torch.squeeze(torch.tensor(local_memory[i].actions, dtype=torch.float32).to(device), 1).detach())
+            old_logprobs_list.append(torch.squeeze(torch.tensor(local_memory[i].logprobs, dtype=torch.float32).to(device), 1).detach())
         
         # Optimize policy for K epochs:
         for _ in range(self.K_epochs):
@@ -156,7 +156,7 @@ def main():
     exp_name = "ppo_continuous_check"
     render = False
     solved_reward = 300  # stop training if avg_reward > solved_reward
-    log_interval = 20  # print avg reward in the interval
+    log_interval = 1  # print avg reward in the interval
     max_episodes = 10000  # max training episodes
     max_timesteps = 1500  # max timesteps in one episode
 
@@ -172,7 +172,7 @@ def main():
     random_seed = None
     #############################################
 
-    writer = SummaryWriter(logdir=os.path.join("logs/ppo_/", exp_name))
+    writer = SummaryWriter(logdir=os.path.join("logs/ppo/", exp_name))
     # creating environment
     env = gym.make(env_name)
     state_dim = env.observation_space.shape[0]
@@ -184,7 +184,7 @@ def main():
         env.seed(random_seed)
         np.random.seed(random_seed)
 
-    memory = Memory()
+    memory = [Memory()]
     ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip)
     print(lr, betas)
 
@@ -199,18 +199,23 @@ def main():
         t = 0
         for t in range(max_timesteps):
             time_step += 1
+
+            memory[0].states.append(state)
+
             # Running policy_old:
-            action = ppo.select_action(state, memory)
+            action, log_prob = ppo.select_action(state)
             state, reward, done, _ = env.step(action)
 
             # Saving reward and is_terminals:
-            memory.rewards.append(reward)
-            memory.is_terminals.append(done)
+            memory[0].actions.append(action)
+            memory[0].logprobs.append(log_prob)
+            memory[0].rewards.append(reward)
+            memory[0].is_terminals.append(done)
 
             # update if its time
             if time_step % update_timestep == 0:
                 ppo.update(memory)
-                memory.clear_memory()
+                memory[0].clear_memory()
                 time_step = 0
             running_reward += reward
             if render:
@@ -219,18 +224,6 @@ def main():
                 break
 
         avg_length += t
-
-        # stop training if avg_reward > solved_reward
-        if running_reward > (log_interval * solved_reward):
-            print("########## Solved! ##########")
-            torch.save(ppo.policy.state_dict(), os.path.join("../../Desktop/others/ccdb_backup/plots/save-dir/ppo_/", exp_name))
-            break
-
-        # save every 500 episodes
-        if i_episode % 500 == 0:
-            if not os.path.exists(os.path.join("../../Desktop/others/ccdb_backup/plots/save-dir/ppo_/", exp_name)):
-                os.makedirs(os.path.join("../../Desktop/others/ccdb_backup/plots/save-dir/ppo_/", exp_name))
-            torch.save(ppo.policy.state_dict(), os.path.join("../../Desktop/others/ccdb_backup/plots/save-dir/ppo_/", exp_name))
 
         # logging
         if i_episode % log_interval == 0:
