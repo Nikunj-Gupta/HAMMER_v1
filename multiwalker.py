@@ -1,7 +1,7 @@
 from itertools import count
 import argparse
 
-from pettingzoo.sisl import multiwalker_v5
+from pettingzoo.sisl import multiwalker_v6
 import numpy as np
 
 from local_agents.ppo import PPO as Local_Agent
@@ -38,7 +38,7 @@ args = parser.parse_args()
 config = read_config(args.config)
 
 n_agents = args.nwalkers
-parallel_env = multiwalker_v5.parallel_env(n_walkers=n_agents, position_noise=1e-3, angle_noise=1e-3,
+parallel_env = multiwalker_v6.parallel_env(n_walkers=n_agents, position_noise=1e-3, angle_noise=1e-3,
                                 forward_reward=1.0, fall_reward=-100.0, terminate_reward=-100.0,
                                 terminate_on_fall=True, max_cycles=500)
 
