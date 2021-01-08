@@ -1,12 +1,13 @@
 import argparse
+from itertools import count
 
 from tensorboardX import SummaryWriter
 
 from local_agents.ppo_discrete import PPO as LocalPolicy
 from global_messenger.ppo import PPO as GlobalPolicy
-from ppo import Memory
+from local_agents.ppo_discrete import Memory
 
-from ma_envs.make_env import make_env
+from pettingzoo.mpe import simple_spread_v2
 from utils import read_config
 import os
 import numpy as np
@@ -15,8 +16,15 @@ import torch
 
 def run(args):
 
-    env = make_env(scenario_name="simple_spread", benchmark=False)
-    print("Number of Agents: ", env.n)
+    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=25) 
+    env.reset()
+    obs_space = env.observation_spaces 
+    obs_dim = env.observation_spaces[env.agents[0]].shape[0]
+    action_dim = env.action_spaces[env.agents[0]].n
+
+    agent_action_space = env.action_spaces[env.agents[0]]
+
+
     config = read_config(args.config) 
     if not config:
         print("config required")
@@ -28,17 +36,17 @@ def run(args):
         env.seed(random_seed)
 
     writer = SummaryWriter(logdir=os.path.join(args.logdir, args.expname)) 
-    local_memory = [Memory() for _ in range(env.n)]
+    local_memory = [Memory() for _ in range(args.nagents)]
     global_memory = Memory()
     MAIN = args.hammer
 
 
     betas = (0.9, 0.999)
-    local_state_dim = env.observation_space[0].shape[0] + args.meslen if MAIN else env.observation_space[0].shape[0] 
+    local_state_dim = obs_dim + args.meslen if MAIN else obs_dim  
 
     local_agent = LocalPolicy(
         state_dim=local_state_dim, 
-        action_dim=env.action_space[0].n,
+        action_dim=action_dim,
         n_latent_var=config["local"]["n_latent_var"],
         lr=config["local"]["lr"],
         betas=betas,
@@ -48,9 +56,9 @@ def run(args):
     )
 
     global_agent = GlobalPolicy(
-        state_dim=(env.observation_space[0].shape[0] * env.n) + env.n,  # all local observations concatenated + all agents' previous actions
+        state_dim=(obs_dim * args.nagents) + args.nagents,  # all local observations concatenated + all agents' previous actions
         action_dim=args.meslen, 
-        n_agents=env.n,
+        n_agents=args.nagents,
         action_std=config["global"]["action_std"],
         lr=config["global"]["lr"],
         betas=betas,
@@ -65,95 +73,89 @@ def run(args):
     local_timestep = 0
     global_timestep = 0
     max_episodes = args.maxepisodes
-    max_timesteps = args.maxtimesteps
-    NUM_AGENTS = env.n
+    max_timesteps = args.maxtimesteps 
 
-    # training loop
-    for i_episode in range(1, max_episodes + 1):
-        state = env.reset()
+    obs = env.reset() 
+    global_agent_state = [obs[i] for i in obs]
+    global_agent_state = np.array(global_agent_state).reshape((-1,))
+    global_agent_state = np.concatenate([global_agent_state, np.random.randint(0, action_dim, args.nagents)])
+    i_episode = 0
+    episode_rewards = 0
+    agents = [agent for agent in env.agents] 
 
-        prev_actions = np.random.randint(0, env.action_space[0].n, env.n)
-        global_agent_state = np.array(state).reshape((-1,))
-        global_agent_state = np.concatenate([global_agent_state, prev_actions])
+    for timestep in count(1):
+        if MAIN: 
+            global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state) 
 
-        for t in range(max_timesteps):
-            local_timestep += 1
-            global_timestep += 1
+        for i, agent in enumerate(agents):
+            local_state = np.concatenate([obs[agent], global_agent_output[i]]) if MAIN else obs[agent]
+            action, local_log_prob = local_agent.policy_old.act(local_state)
 
-            if MAIN: 
-                global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state) 
-                state = np.array([np.concatenate([state[i], global_agent_output[i]]) for i in range(NUM_AGENTS)])   
+            local_memory[i].states.append(local_state)
+            local_memory[i].actions.append(action)
+            local_memory[i].logprobs.append(local_log_prob)
 
-            # Running policy_old:
-            action_masks = [np.zeros(env.action_space[0].n) for _ in range(NUM_AGENTS)]
-            prev_actions = []
-            for i in range(NUM_AGENTS):
-                action, local_log_prob = local_agent.policy_old.act(state[i])
+        actions = {agent : local_memory[i].actions[-1] for i, agent in enumerate(agents)}
+        next_obs, rewards, is_terminals, infos = env.step(actions)
 
-                action_masks[i][action] = 1.0 
+        for i, agent in enumerate(agents):
+            local_memory[i].rewards.append(rewards[agent])
+            local_memory[i].is_terminals.append(is_terminals[agent])
+            episode_rewards += rewards[agent]
 
-                # Storing in states, actions, logprobs in local_memory:
-                local_memory[i].states.append(state[i])
-                local_memory[i].actions.append(action)
-                local_memory[i].logprobs.append(local_log_prob)
+        if MAIN: 
+            global_memory.states.append(global_agent_state)
+            global_memory.actions.append(global_agent_output)
+            global_memory.logprobs.append(global_agent_log_prob)
+            global_memory.rewards.append([rewards[agent] for agent in agents])
+            global_memory.is_terminals.append([is_terminals[agent] for agent in agents])
 
-                prev_actions.append(action) 
+        # update if its time
+        if timestep % config["local"]["update_timestep"] == 0:
+            local_agent.update(local_memory)
+            [mem.clear_memory() for mem in local_memory]
 
-            next_state, reward, done, info = env.step(action_masks)
-            ep_reward += np.mean(reward)
+        if MAIN and timestep % config["global"]["update_timestep"] == 0:
+            global_agent.update(global_memory)
+            global_memory.clear_memory()
 
-            global_agent_next_state = np.array(next_state).reshape((-1,))
-            global_agent_next_state = np.concatenate([global_agent_next_state, prev_actions])
+        obs = next_obs
 
-            for i in range(NUM_AGENTS):
-                local_memory[i].rewards.append(reward[i])
-                local_memory[i].is_terminals.append(done[i]) 
-           
-            if MAIN: 
-                global_memory.states.append(global_agent_state)
-                global_memory.actions.append(global_agent_output)
-                global_memory.logprobs.append(global_agent_log_prob)
-                global_memory.rewards.append([reward[agent] for agent in range(NUM_AGENTS)]) 
-                global_memory.is_terminals.append([done[agent] for agent in range(NUM_AGENTS)]) 
+        # If episode had ended
+        if all([is_terminals[agent] for agent in agents]):
+            i_episode += 1
+            writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
+            timestep=0
+            obs = env.reset()
+            print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
+            episode_rewards = 0
 
-            
-            # update if its time
-            if local_timestep % config["local"]["update_timestep"] == 0:
-                local_agent.update(local_memory) 
-                [mem.clear_memory() for mem in local_memory]
-
-            if MAIN and global_timestep % config["global"]["update_timestep"] == 0:
-                global_agent.update(global_memory)
-                global_memory.clear_memory()
-
-            if args.render:
-                env.render()
-
-            if all(done):
-                break 
-
-            state = next_state
-            global_agent_state = global_agent_next_state
-
-
+        # save every 50 episodes
         if i_episode % args.saveinterval == 0:
             if not os.path.exists(os.path.join(args.savedir, args.expname)):
                 os.makedirs(os.path.join(args.savedir, args.expname))
-            torch.save(local_agent.policy.state_dict(), os.path.join(args.savedir, args.expname, "local_agent.pth"))
-            torch.save(global_agent.policy.state_dict(), os.path.join(args.savedir, args.expname, "global_agent.pth"))
-
-        writer.add_scalar('Episode Reward', ep_reward, i_episode)
-        print("Episode ", i_episode, " Reward: ", ep_reward)
-        ep_reward = 0
-
+            torch.save(local_agent.policy.state_dict(),
+                    os.path.join(args.savedir, args.expname, "local_agent.pth"))
+            torch.save(global_agent.policy.state_dict(),
+                    os.path.join(args.savedir, args.expname, "global_agent.pth"))
+        
+        if i_episode == args.maxepisodes:
+            break
+        
+        global_agent_state = np.array([obs[agent] for agent in agents]).reshape((-1,))
+        prev_actions = np.array([actions[agent] for agent in agents]).reshape((-1,))
+        global_agent_state = np.concatenate([global_agent_state, prev_actions])
+        global_agent_state = global_agent_state
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default=None, help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
     parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
+    parser.add_argument("--nagents", type=int, default=5)
 
     parser.add_argument("--maxepisodes", type=int, default=30000) 
     parser.add_argument("--maxtimesteps", type=int, default=25)
