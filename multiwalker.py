@@ -6,7 +6,7 @@ import numpy as np
 
 from local_agents.ppo import PPO as Local_Agent
 from global_messenger.ppo import PPO as Global_Messenger
-from ppo import Memory
+from local_agents.ppo import Memory 
 from utils import read_config
 
 from tensorboardX import SummaryWriter
@@ -18,7 +18,7 @@ parser.add_argument("--config", type=str, default="configs/random_seed_runs/mw-b
 parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
 parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL") 
-parser.add_argument("--nwalkers", type=int, default=3) 
+parser.add_argument("--nagents", type=int, default=3) 
 parser.add_argument("--expname", type=str, default=None)
 
 parser.add_argument("--maxepisodes", type=int, default=30000) 
@@ -37,7 +37,7 @@ parser.add_argument("--savedir", type=str, default="save-dir/", help="save direc
 args = parser.parse_args()
 config = read_config(args.config)
 
-n_agents = args.nwalkers
+n_agents = args.nagents
 parallel_env = multiwalker_v6.parallel_env(n_walkers=n_agents, position_noise=1e-3, angle_noise=1e-3,
                                 forward_reward=1.0, fall_reward=-100.0, terminate_reward=-100.0,
                                 terminate_on_fall=True, max_cycles=500)
@@ -87,9 +87,10 @@ global_messenger = Global_Messenger(
     )
 
 obs = parallel_env.reset()
-global_agent_state = [obs[i] for i in obs]
-global_agent_state = np.array(global_agent_state).reshape((-1,))
-global_agent_state = np.concatenate([global_agent_state, np.random.uniform(-1, 1, action_dim * n_agents)])
+if MAIN: 
+    global_agent_state = [obs[i] for i in obs]
+    global_agent_state = np.array(global_agent_state).reshape((-1,))
+    global_agent_state = np.concatenate([global_agent_state, np.random.uniform(-1, 1, action_dim * n_agents)])
 i_episode = 0
 episode_rewards = 0
 agents = [agent for agent in parallel_env.agents]
@@ -97,7 +98,8 @@ agents = [agent for agent in parallel_env.agents]
 # Training loop, starting count from 1:
 for timestep in count(1):
     # Before running through each agent, we get messages for them, from the global agent.
-    global_agent_output, global_agent_log_prob = global_messenger.select_action(global_agent_state)    
+    if MAIN: 
+        global_agent_output, global_agent_log_prob = global_messenger.select_action(global_agent_state)    
 
     for i, agent in enumerate(agents):
         # "MAIN" decides whether the local agents take in any input from the global agent.
@@ -121,11 +123,12 @@ for timestep in count(1):
         # And finally, we save the epside's performance by saving episode_rewards/n_agents
         episode_rewards += rewards[agent]
 
-    global_memory.states.append(global_agent_state)
-    global_memory.actions.append(global_agent_output)
-    global_memory.logprobs.append(global_agent_log_prob)
-    global_memory.rewards.append([rewards[agent] for agent in agents])
-    global_memory.is_terminals.append([is_terminals[agent] for agent in agents])
+    if MAIN: 
+        global_memory.states.append(global_agent_state)
+        global_memory.actions.append(global_agent_output)
+        global_memory.logprobs.append(global_agent_log_prob)
+        global_memory.rewards.append([rewards[agent] for agent in agents])
+        global_memory.is_terminals.append([is_terminals[agent] for agent in agents])
 
 
     # update if its time
@@ -133,7 +136,7 @@ for timestep in count(1):
         local_agent.update(local_memory)
         [mem.clear_memory() for mem in local_memory]
 
-    if timestep % config["global"]["update_timestep"] == 0:
+    if MAIN and timestep % config["global"]["update_timestep"] == 0:
         global_messenger.update(global_memory)
         global_memory.clear_memory()
 
@@ -154,7 +157,8 @@ for timestep in count(1):
             os.makedirs(os.path.join(args.savedir, args.expname))
         torch.save(local_agent.policy.state_dict(),
                    os.path.join(args.savedir, args.expname, "local_agent.pth"))
-        torch.save(global_messenger.policy.state_dict(),
+        if MAIN: 
+            torch.save(global_messenger.policy.state_dict(),
                    os.path.join(args.savedir, args.expname, "global_messenger.pth"))
     
     if i_episode == args.maxepisodes:
@@ -162,8 +166,9 @@ for timestep in count(1):
     
     # Update global_agent_state here:
     # Note: we use obs here, to insure that if the episode ends, we give the global agent, the new reset state.
-    global_agent_state = np.array([obs[agent] for agent in agents]).reshape((-1,))
-    prev_actions = np.array([actions[agent] for agent in agents]).reshape((-1,))
-    global_agent_state = np.concatenate([global_agent_state, prev_actions])
-    global_agent_state = global_agent_state
+    if MAIN: 
+        global_agent_state = np.array([obs[agent] for agent in agents]).reshape((-1,))
+        prev_actions = np.array([actions[agent] for agent in agents]).reshape((-1,))
+        global_agent_state = np.concatenate([global_agent_state, prev_actions])
+        global_agent_state = global_agent_state
 
