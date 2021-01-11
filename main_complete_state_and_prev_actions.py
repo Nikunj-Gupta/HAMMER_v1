@@ -12,6 +12,7 @@ from utils import read_config
 import os
 import numpy as np
 import torch
+import json 
 
 
 def run(args):
@@ -35,7 +36,9 @@ def run(args):
         print("Random Seed: {}".format(random_seed))
         env.seed(random_seed)
 
-    writer = SummaryWriter(logdir=os.path.join(args.logdir, args.expname)) 
+    expname = args.expname if args.expname is not None else 'cn----L-lr-{}-updatestep-{}-epoch-{}----G-lr-{}-updatestep-{}-epoch-{}----nagents-{}-hammer-{}-meslen-{}'.format(config["local"]["lr"], config["local"]["update_timestep"], config["local"]["K_epochs"], config["global"]["lr"], config["global"]["update_timestep"], config["global"]["K_epochs"], args.nagents, args.hammer, args.meslen)
+    
+    writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
     local_memory = [Memory() for _ in range(args.nagents)]
     global_memory = Memory()
     MAIN = args.hammer
@@ -72,8 +75,6 @@ def run(args):
     ep_reward = 0
     local_timestep = 0
     global_timestep = 0
-    max_episodes = args.maxepisodes
-    max_timesteps = args.maxtimesteps 
 
     obs = env.reset() 
     global_agent_state = [obs[i] for i in obs]
@@ -82,6 +83,9 @@ def run(args):
     i_episode = 0
     episode_rewards = 0
     agents = [agent for agent in env.agents] 
+    actor_loss = [0 for agent in agents]
+    critic_loss = [0 for agent in agents]
+
 
     for timestep in count(1):
         if MAIN: 
@@ -109,14 +113,15 @@ def run(args):
             global_memory.logprobs.append(global_agent_log_prob)
             global_memory.rewards.append([rewards[agent] for agent in agents])
             global_memory.is_terminals.append([is_terminals[agent] for agent in agents])
+            
 
         # update if its time
         if timestep % config["local"]["update_timestep"] == 0:
-            local_agent.update(local_memory)
+            local_agent.update(local_memory, writer, i_episode)
             [mem.clear_memory() for mem in local_memory]
 
         if MAIN and timestep % config["global"]["update_timestep"] == 0:
-            global_agent.update(global_memory)
+            global_agent.update(global_memory, writer, i_episode)
             global_memory.clear_memory()
 
         obs = next_obs
@@ -125,19 +130,18 @@ def run(args):
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
             writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
-            timestep=0
             obs = env.reset()
             print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
             episode_rewards = 0
 
         # save every 50 episodes
         if i_episode % args.saveinterval == 0:
-            if not os.path.exists(os.path.join(args.savedir, args.expname)):
-                os.makedirs(os.path.join(args.savedir, args.expname))
+            if not os.path.exists(os.path.join(args.savedir, expname)):
+                os.makedirs(os.path.join(args.savedir, expname))
             torch.save(local_agent.policy.state_dict(),
-                    os.path.join(args.savedir, args.expname, "local_agent.pth"))
+                    os.path.join(args.savedir, expname, "local_agent.pth"))
             torch.save(global_agent.policy.state_dict(),
-                    os.path.join(args.savedir, args.expname, "global_agent.pth"))
+                    os.path.join(args.savedir, expname, "global_agent.pth"))
         
         if i_episode == args.maxepisodes:
             break
@@ -150,21 +154,19 @@ def run(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=None, help="config file name")
+    parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
     parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
-    parser.add_argument("--nagents", type=int, default=5)
+    parser.add_argument("--nagents", type=int, default=3)
 
     parser.add_argument("--maxepisodes", type=int, default=30000) 
-    parser.add_argument("--maxtimesteps", type=int, default=25)
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
-    parser.add_argument("--loginterval", type=int, default=20)
     parser.add_argument("--saveinterval", type=int, default=50)
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")

@@ -108,7 +108,7 @@ class PPO:
     def load(self, filename):
         self.policy.load_state_dict(torch.load(filename))
 
-    def update(self, memory):
+    def update(self, memory, writer=None, i_episode=None):
         # Monte Carlo estimate of rewards:
         rew = np.array(memory.rewards)
         is_ter = np.array(memory.is_terminals)
@@ -143,12 +143,17 @@ class PPO:
                 advantages = rewards - state_values.detach()
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
-                loss = -torch.min(surr1, surr2) + 0.5 * self.MseLoss(state_values, rewards) - 0.01 * dist_entropy
+                critic_loss =  0.5 * self.MseLoss(state_values, rewards)
+                actor_loss = - torch.min(surr1, surr2) - 0.01 * dist_entropy
+                loss = actor_loss + critic_loss
 
                 # take gradient step
                 self.optimizer.zero_grad()
                 loss.mean().backward()
                 self.optimizer.step()
+            if writer is not None:
+                writer.add_scalar('actor_loss/global_agent-{}'.format(i), actor_loss.mean(), i_episode)
+                writer.add_scalar('critic_loss/global_agent-{}'.format(i), critic_loss.mean(), i_episode)
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())

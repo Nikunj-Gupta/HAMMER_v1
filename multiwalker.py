@@ -22,13 +22,11 @@ parser.add_argument("--nagents", type=int, default=3)
 parser.add_argument("--expname", type=str, default=None)
 
 parser.add_argument("--maxepisodes", type=int, default=30000) 
-parser.add_argument("--maxtimesteps", type=int, default=25)
 
 parser.add_argument("--meslen", type=int, default=4, help="message length")
 parser.add_argument("--randomseed", type=int, default=10)
 parser.add_argument("--render", type=bool, default=False)
 
-parser.add_argument("--loginterval", type=int, default=20)
 parser.add_argument("--saveinterval", type=int, default=50)
 parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
 parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
@@ -146,7 +144,6 @@ for timestep in count(1):
     if all([is_terminals[agent] for agent in agents]):
         i_episode += 1
         writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/n_agents, i_episode)
-        timestep=0
         obs = parallel_env.reset()
         print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/n_agents))
         episode_rewards = 0
