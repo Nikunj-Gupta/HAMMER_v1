@@ -46,6 +46,7 @@ obs_dim = parallel_env.observation_spaces[parallel_env.agents[0]].shape[0]
 action_dim = parallel_env.action_spaces[parallel_env.agents[0]].shape[0]
 agent_action_space = parallel_env.action_spaces[parallel_env.agents[0]]
 
+
 random_seed = args.randomseed
 if random_seed:
     print("Random Seed: {}".format(random_seed))

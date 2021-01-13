@@ -27,28 +27,32 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, n_latent_var):
+    def __init__(self, state_dim, action_dim, actor_layer, critic_layer):
         super(ActorCritic, self).__init__()
 
         # actor
-        self.action_layer = nn.Sequential(
-            nn.Linear(state_dim, n_latent_var),
-            nn.Tanh(),
-            nn.Linear(n_latent_var, n_latent_var),
-            nn.Tanh(),
-            nn.Linear(n_latent_var, action_dim),
-            nn.Softmax(dim=-1)
-        )
-
-        # critic
-        self.value_layer = nn.Sequential(
-            nn.Linear(state_dim, n_latent_var),
-            nn.Tanh(),
-            nn.Linear(n_latent_var, n_latent_var),
-            nn.Tanh(),
-            nn.Linear(n_latent_var, 1)
-        )
-
+        layers = [] 
+        layers.append(nn.Linear(state_dim, actor_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(actor_layer[1:])): 
+            layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(actor_layer[-1], action_dim)) 
+        layers.append(nn.Softmax(dim=-1))
+        
+        self.action_layer = nn.Sequential(*layers) 
+        
+        # critic 
+        layers = [] 
+        layers.append(nn.Linear(state_dim, critic_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(critic_layer[1:])): 
+            layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(critic_layer[-1], 1)) 
+        
+        self.value_layer = nn.Sequential(*layers) 
+        
     def forward(self):
         raise NotImplementedError
 
@@ -74,16 +78,16 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, n_latent_var, lr, betas, gamma, K_epochs, eps_clip):
+    def __init__(self, state_dim, action_dim, actor_layer, critic_layer, lr, betas, gamma, K_epochs, eps_clip):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = K_epochs
 
-        self.policy = ActorCritic(state_dim, action_dim, n_latent_var).to(device)
+        self.policy = ActorCritic(state_dim=state_dim, action_dim=action_dim, actor_layer=actor_layer, critic_layer=critic_layer).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
-        self.policy_old = ActorCritic(state_dim, action_dim, n_latent_var).to(device)
+        self.policy_old = ActorCritic(state_dim=state_dim, action_dim=action_dim, actor_layer=actor_layer, critic_layer=critic_layer).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()

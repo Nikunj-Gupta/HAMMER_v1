@@ -27,25 +27,31 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, n_agents, action_std, hidden_nodes=64):
+    def __init__(self, state_dim, action_dim, n_agents, action_std, actor_layer, critic_layer):
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
-        self.actor = nn.Sequential(
-            nn.Linear(state_dim, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, action_dim * n_agents),
-            nn.Tanh()
-        )
+        layers = [] 
+        layers.append(nn.Linear(state_dim, actor_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(actor_layer[1:])): 
+            layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(actor_layer[-1], action_dim * n_agents)) 
+        layers.append(nn.Tanh()) 
+        
+        self.actor = nn.Sequential(*layers) 
+        
         # critic
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, n_agents)
-        )
+        layers = [] 
+        layers.append(nn.Linear(state_dim, critic_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(critic_layer[1:])): 
+            layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(critic_layer[-1], n_agents)) 
+        
+        self.critic = nn.Sequential(*layers) 
+        
         self.n_agents = n_agents
         self.action_dim = action_dim
         self.action_var = torch.full((action_dim,), action_std * action_std).to(device)
@@ -83,17 +89,17 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, n_agents, action_std, lr, betas, gamma, K_epochs, eps_clip, hidden_nodes=64):
+    def __init__(self, state_dim, action_dim, n_agents, action_std, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = K_epochs
 
-        self.policy = ActorCritic(state_dim, action_dim, n_agents, action_std, hidden_nodes).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, n_agents, action_std, actor_layer, critic_layer).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
 
-        self.policy_old = ActorCritic(state_dim, action_dim, n_agents, action_std, hidden_nodes).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, n_agents, action_std, actor_layer, critic_layer).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()

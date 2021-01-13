@@ -15,6 +15,7 @@ import torch
 import json 
 
 
+
 def run(args):
 
     env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=100) 
@@ -34,14 +35,17 @@ def run(args):
     random_seed = args.randomseed 
     if random_seed:
         print("Random Seed: {}".format(random_seed))
-        env.seed(random_seed)
+        env.seed(random_seed) 
+        torch.manual_seed(random_seed)
+        np.random.seed(random_seed)
+
 
     expname = args.expname if args.expname is not None else 'cn----L-lr-{}-updatestep-{}-epoch-{}----G-lr-{}-updatestep-{}-epoch-{}----nagents-{}-hammer-{}-meslen-{}'.format(config["local"]["lr"], config["local"]["update_timestep"], config["local"]["K_epochs"], config["global"]["lr"], config["global"]["update_timestep"], config["global"]["K_epochs"], args.nagents, args.hammer, args.meslen)
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
     local_memory = [Memory() for _ in range(args.nagents)]
     global_memory = Memory()
-    MAIN = args.hammer
+    MAIN = args.hammer 
 
 
     betas = (0.9, 0.999)
@@ -50,7 +54,8 @@ def run(args):
     local_agent = LocalPolicy(
         state_dim=local_state_dim, 
         action_dim=action_dim,
-        n_latent_var=config["local"]["n_latent_var"],
+        actor_layer=config["local"]["actor_layer"],
+        critic_layer=config["local"]["critic_layer"],
         lr=config["local"]["lr"],
         betas=betas,
         gamma=config["main"]["gamma"],
@@ -67,8 +72,9 @@ def run(args):
         betas=betas,
         gamma = config["main"]["gamma"],
         K_epochs=config["global"]["K_epochs"],
-        eps_clip=config["main"]["eps_clip"],
-        hidden_nodes=config["global"]["hidden_nodes"]
+        eps_clip=config["main"]["eps_clip"],        
+        actor_layer=config["global"]["actor_layer"],
+        critic_layer=config["global"]["critic_layer"],
     )
 
     # logging variables
@@ -86,20 +92,24 @@ def run(args):
     actor_loss = [0 for agent in agents]
     critic_loss = [0 for agent in agents]
 
-
     for timestep in count(1):
         if MAIN: 
             global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state) 
+            if args.meslen == 1: 
+                global_agent_output = [np.array([i]) for i in global_agent_output] 
 
-        for i, agent in enumerate(agents):
+        action_array = [] 
+        for i, agent in enumerate(agents): 
             local_state = np.concatenate([obs[agent], global_agent_output[i]]) if MAIN else obs[agent]
-            action, local_log_prob = local_agent.policy_old.act(local_state)
+            action, local_log_prob = local_agent.policy_old.act(local_state) 
 
+            action_array.append(action) 
             local_memory[i].states.append(local_state)
             local_memory[i].actions.append(action)
-            local_memory[i].logprobs.append(local_log_prob)
+            local_memory[i].logprobs.append(local_log_prob) 
+        
+        actions = {agent : action_array[i] for i, agent in enumerate(agents)}  
 
-        actions = {agent : local_memory[i].actions[-1] for i, agent in enumerate(agents)}
         next_obs, rewards, is_terminals, infos = env.step(actions)
 
         for i, agent in enumerate(agents):

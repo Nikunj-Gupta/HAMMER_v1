@@ -3,3 +3,4 @@ logs/
 save-dir/
 .vscode/
 .venv/
+local-trials/
