@@ -3,7 +3,7 @@ cloudpickle
 future
 gym
 numpy
-PettingZoo
+PettingZoo==1.5.0
 Pillow
 protobuf
 pyglet
