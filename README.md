@@ -4,6 +4,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+For working with tests on MADDPG, install maddpg using:
+```bash
+pip install git+https://github.com/nishantkr18/maddpg
+```
 
 ## How to run:
 MultiWalker:

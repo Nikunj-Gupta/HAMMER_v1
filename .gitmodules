@@ -1,3 +1,0 @@
-[submodule "baselines/maddpg"]
-	path = baselines/maddpg
-	url = https://github.com/nishantkr18/maddpg
