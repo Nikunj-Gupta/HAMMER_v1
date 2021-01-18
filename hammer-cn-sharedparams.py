@@ -122,8 +122,7 @@ def run(args):
         for i, agent in enumerate(agents):
             local_memory[i].rewards.append(rewards[agent])
             local_memory[i].is_terminals.append(is_terminals[agent])
-        
-        episode_rewards += rewards[agent]
+            episode_rewards += rewards[agent]
 
         if MAIN: 
             global_agent_output = global_agent_output.reshape(-1) 
