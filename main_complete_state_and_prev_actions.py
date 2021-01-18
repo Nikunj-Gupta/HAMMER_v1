@@ -18,7 +18,7 @@ import json
 
 def run(args):
 
-    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=100) 
+    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=25) 
     env.reset()
     obs_space = env.observation_spaces 
     obs_dim = env.observation_spaces[env.agents[0]].shape[0]
@@ -139,9 +139,9 @@ def run(args):
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
-            writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
+            writer.add_scalar('reward (avg agent)', episode_rewards/args.nagents, i_episode)
             obs = env.reset()
-            print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
+            print('Episode {} \t reward (avg agent): {}'.format(i_episode, episode_rewards/args.nagents))
             episode_rewards = 0
 
         # save every 50 episodes
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxepisodes", type=int, default=45000) 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
