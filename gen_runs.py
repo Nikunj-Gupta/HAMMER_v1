@@ -5,7 +5,7 @@ codes = {
     "CN": {
         "script": "../../../main_complete_state_and_prev_actions.py", 
         "config": "../../../configs/2021/cn/hyperparams.yaml", 
-        "dumpdir": "runs/2021/meslen-runs", 
+        "dumpdir": "runs/2021/random-seed-runs", 
         "maxepisodes": 100000
     }, 
 
@@ -32,14 +32,14 @@ fixed_text = "#!/bin/bash\n"\
 
 for code in codes:  
     for hammer in [0, 1]: 
-        for nagents in [20]: 
-            for seed in [6]: 
-                for meslen in range(1, 11   ): 
+        for nagents in [3]: 
+            for seed in [46, 68, 97, 93, 71]: 
+                for meslen in [1]: 
                     expname = "hammer" if hammer else "IL" 
                     expname = code + "-" + expname + "-nagents-" + str(nagents) + "-rs-" + str(seed)  
                     if hammer: expname += "-meslen-" + str(meslen)
+                    
                     command = " ".join([
-
                         "python", codes[code]['script'], 
                         "--config", codes[code]['config'], 
                         "--hammer", str(hammer), 

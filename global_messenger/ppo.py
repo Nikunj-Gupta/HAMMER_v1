@@ -157,9 +157,9 @@ class PPO:
                 self.optimizer.zero_grad()
                 loss.mean().backward()
                 self.optimizer.step()
-            if writer is not None:
-                writer.add_scalar('actor_loss/global_agent-{}'.format(i), actor_loss.mean(), i_episode)
-                writer.add_scalar('critic_loss/global_agent-{}'.format(i), critic_loss.mean(), i_episode)
+        # if writer is not None:
+        #     writer.add_scalar('actor_loss/global_agent', actor_loss.mean(), i_episode)
+        #     writer.add_scalar('critic_loss/global_agent', critic_loss.mean(), i_episode) 
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
