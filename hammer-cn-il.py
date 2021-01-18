@@ -19,7 +19,7 @@ import json
 
 def run(args):
 
-    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=100) 
+    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=25) 
     env.reset()
     obs_space = env.observation_spaces 
     obs_dim = env.observation_spaces[env.agents[0]].shape[0]
@@ -66,10 +66,12 @@ def run(args):
     ) for _ in range(args.nagents)]
 
 
+    if args.prevactions: 
+        print("Using Previous Actions") 
+    global_state_dim = (obs_dim * args.nagents) + args.nagents if args.prevactions else (obs_dim * args.nagents) 
     global_agent = GlobalPolicy(
-        state_dim=(obs_dim * args.nagents) + args.nagents,  # all local observations concatenated + all agents' previous actions
+        state_dim=global_state_dim, 
         action_dim=args.meslen*args.nagents, 
-        # n_agents=args.nagents,
         action_std=config["global"]["action_std"],
         lr=config["global"]["lr"],
         betas=betas,
@@ -88,7 +90,8 @@ def run(args):
     obs = env.reset() 
     global_agent_state = [obs[i] for i in obs]
     global_agent_state = np.array(global_agent_state).reshape((-1,))
-    global_agent_state = np.concatenate([global_agent_state, np.random.randint(0, action_dim, args.nagents)])
+    if args.prevactions: 
+        global_agent_state = np.concatenate([global_agent_state, np.random.randint(0, action_dim, args.nagents)])
     i_episode = 0
     episode_rewards = 0
     agents = [agent for agent in env.agents] 
@@ -167,9 +170,10 @@ def run(args):
             break
         
         global_agent_state = np.array([obs[agent] for agent in agents]).reshape((-1,))
-        prev_actions = np.array([actions[agent] for agent in agents]).reshape((-1,))
-        global_agent_state = np.concatenate([global_agent_state, prev_actions])
-        global_agent_state = global_agent_state
+        if args.prevactions: 
+            prev_actions = np.array([actions[agent] for agent in agents]).reshape((-1,))
+            global_agent_state = np.concatenate([global_agent_state, prev_actions])
+            global_agent_state = global_agent_state 
 
 if __name__ == '__main__':
 
@@ -182,6 +186,7 @@ if __name__ == '__main__':
     parser.add_argument("--nagents", type=int, default=3)
 
     parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--prevactions", type=int, default=0) 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
