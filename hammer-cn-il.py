@@ -62,7 +62,7 @@ def run(args):
         gamma=config["main"]["gamma"],
         K_epochs=config["local"]["K_epochs"],
         eps_clip=config["main"]["eps_clip"],
-        shared=True 
+        shared=False
     ) for _ in range(args.nagents)]
 
 
@@ -158,7 +158,7 @@ def run(args):
             if not os.path.exists(os.path.join(args.savedir, expname)):
                 os.makedirs(os.path.join(args.savedir, expname))
             for i in range(args.nagents): 
-                torch.save(local_agent[i]]policy.state_dict(),
+                torch.save(local_agent[i].policy.state_dict(),
                         os.path.join(args.savedir, expname, "local_agent-"+str(i)+".pth"))
             torch.save(global_agent.policy.state_dict(),
                     os.path.join(args.savedir, expname, "global_agent.pth"))
