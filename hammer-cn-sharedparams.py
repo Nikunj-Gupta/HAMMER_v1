@@ -19,7 +19,7 @@ import json
 
 def run(args):
 
-    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=100) 
+    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=25) 
     env.reset()
     obs_space = env.observation_spaces 
     obs_dim = env.observation_spaces[env.agents[0]].shape[0]
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxepisodes", type=int, default=1000000) 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
