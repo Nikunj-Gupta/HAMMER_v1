@@ -78,8 +78,9 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, actor_layer, critic_layer, lr, betas, gamma, K_epochs, eps_clip):
+    def __init__(self, state_dim, action_dim, actor_layer, critic_layer, lr, betas, gamma, K_epochs, eps_clip, shared=True):
         self.lr = lr
+        self.shared = shared 
         self.betas = betas
         self.gamma = gamma
         self.eps_clip = eps_clip
@@ -99,8 +100,10 @@ class PPO:
         rewards_list = []
         old_states_list = []
         old_actions_list = []
-        old_logprobs_list = []
-        n_agents = len(memory)
+        old_logprobs_list = [] 
+        if not self.shared: 
+            memory = [memory]
+        n_agents = len(memory) 
 
         # Monte Carlo estimate of state rewards:
         for i in range(n_agents):
