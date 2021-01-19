@@ -16,6 +16,11 @@ import numpy as np
 import torch
 import json 
 
+def preprocess_one_obs(obs, which=1, limit=10): 
+    agent = "agent_" + str(which) 
+    obs[agent][limit:] = [0]*(len(obs["agent_0"])-(limit)) 
+    return obs 
+
 def preprocess_obs(obs, limit=10): 
     for i in obs: 
         obs[i] = obs[i][:limit] 
@@ -23,12 +28,23 @@ def preprocess_obs(obs, limit=10):
 
 def run(args):
 
-    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=25) 
+    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=args.maxcycles) 
     env.reset()
     obs_space = env.observation_spaces 
+
     if args.partialobs: 
         print("Using Partial Observations") 
-    obs_dim = len(preprocess_obs(env.reset())["agent_0"]) if args.partialobs else env.observation_spaces[env.agents[0]].shape[0] 
+    
+    if args.heterogeneity: 
+        print("Using Heterogeneous Local Agents") 
+
+    if args.heterogeneity: 
+        obs_dim = len(preprocess_one_obs(env.reset())["agent_0"]) 
+    elif args.partialobs:  
+        obs_dim = len(preprocess_obs(env.reset())["agent_0"])  
+    else:
+        obs_dim = env.observation_spaces[env.agents[0]].shape[0] 
+        
     action_dim = env.action_spaces[env.agents[0]].n
 
     agent_action_space = env.action_spaces[env.agents[0]]
@@ -109,7 +125,13 @@ def run(args):
     local_timestep = 0
     global_timestep = 0
 
-    obs = preprocess_obs(env.reset()) if args.partialobs else env.reset() 
+    if args.heterogeneity: 
+        obs = preprocess_one_obs(env.reset())
+    elif args.partialobs: 
+        obs = preprocess_obs(env.reset())
+    else:  
+        obs = env.reset() 
+
     global_agent_state = [obs[i] for i in obs]
     global_agent_state = np.array(global_agent_state).reshape((-1,)) 
     if args.prevactions: 
@@ -143,7 +165,10 @@ def run(args):
         actions = {agent : action_array[i] for i, agent in enumerate(agents)}  
 
         next_obs, rewards, is_terminals, infos = env.step(actions) 
-        if args.partialobs: next_obs = preprocess_obs(next_obs)  
+        if args.partialobs: 
+            next_obs = preprocess_obs(next_obs) 
+        elif args.heterogeneity: 
+            next_obs = preprocess_one_obs(next_obs) 
 
         for i, agent in enumerate(agents):
             local_memory[i].rewards.append(rewards[agent])
@@ -180,7 +205,12 @@ def run(args):
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
             writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
-            obs = preprocess_obs(env.reset()) if args.partialobs else env.reset() 
+            if args.heterogeneity: 
+                obs = preprocess_one_obs(env.reset()) 
+            elif args.partialobs: 
+                obs = preprocess_obs(env.reset()) 
+            else: 
+                obs = env.reset() 
             print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
             episode_rewards = 0
 
@@ -213,7 +243,7 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
-    parser.add_argument("--hammer", type=int, default=0, help="1 for hammer; 0 for IL")
+    parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
@@ -221,13 +251,15 @@ if __name__ == '__main__':
     parser.add_argument("--prevactions", type=int, default=0) 
     parser.add_argument("--partialobs", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
+    parser.add_argument("--heterogeneity", type=int, default=0) 
+    parser.add_argument("--maxcycles", type=int, default=25) 
 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
-    parser.add_argument("--saveinterval", type=int, default=50)
+    parser.add_argument("--saveinterval", type=int, default=5000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
     
