@@ -109,7 +109,7 @@ def run(args):
     global_agent = GlobalPolicy(
         state_dim=global_state_dim, # all local observations concatenated + all agents' previous actions
         action_dim=args.meslen*args.nagents, 
-        # n_agents=args.nagents,
+        n_agents=args.nagents, # required for discrete messages
         action_std=config["global"]["action_std"],
         lr=config["global"]["lr"],
         betas=betas,
@@ -118,6 +118,7 @@ def run(args):
         eps_clip=config["main"]["eps_clip"],        
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"],
+        is_discrete = args.discretemes
     )
 
     # logging variables
@@ -256,6 +257,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
+    parser.add_argument("--discretemes", type=int, default=1)
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
