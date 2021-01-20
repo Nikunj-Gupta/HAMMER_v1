@@ -98,7 +98,7 @@ class ActorCritic(nn.Module):
             
             return action_logprobs, torch.squeeze(state_value), dist_entropy
         else:
-            logits = self.actor(state)
+            logits = self.actor(state.float())
             logits = logits.reshape(-1, self.n_agents, int(self.action_dim/self.n_agents))
             sm = nn.Softmax(dim=-1)
             action_probs = sm(logits)
