@@ -4,6 +4,7 @@ import os
 import torch
 import torch.nn as nn
 from torch.distributions import MultivariateNormal
+from torch.distributions import Categorical
 import gym
 import numpy as np
 from tensorboardX import SummaryWriter
@@ -27,7 +28,7 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, action_std, actor_layer, critic_layer):
+    def __init__(self, state_dim, action_dim, action_std, n_agents, actor_layer, critic_layer, is_discrete):
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
         layers = [] 
@@ -37,7 +38,10 @@ class ActorCritic(nn.Module):
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
             layers.append(nn.Tanh()) 
         layers.append(nn.Linear(actor_layer[-1], action_dim)) 
-        layers.append(nn.Tanh()) 
+        if is_discrete == 0:
+            layers.append(nn.Tanh()) 
+        else:
+            pass
         
         self.actor = nn.Sequential(*layers) 
         
@@ -54,49 +58,83 @@ class ActorCritic(nn.Module):
         
         self.action_dim = action_dim
         self.action_var = torch.full((action_dim,), action_std * action_std).to(device)
+        self.is_discrete = is_discrete
+        self.n_agents = n_agents
 
     def forward(self):
         raise NotImplementedError
 
     def act(self, state):
-        action_mean = self.actor(state)
-        cov_mat = torch.diag(self.action_var).to(device)
-        dist = MultivariateNormal(action_mean, cov_mat)
-        action = dist.sample()
-        action_logprob = dist.log_prob(action) 
+        if self.is_discrete == 0:
+            action_mean = self.actor(state)
+            cov_mat = torch.diag(self.action_var).to(device)
+            dist = MultivariateNormal(action_mean, cov_mat)
+            action = dist.sample()
+            action_logprob = dist.log_prob(action) 
 
-        return action.detach(), action_logprob.detach() # torch.stack(action).detach(), torch.stack(action_logprob).detach()
+            return action.detach(), action_logprob.detach() # torch.stack(action).detach(), torch.stack(action_logprob).detach()
+        else:
+            logits = self.actor(state)
+            logits = logits.reshape(self.n_agents, int(self.action_dim/self.n_agents))
+            sm = nn.Softmax(dim=-1)
+            action_probs = sm(logits)
+            dist = Categorical(action_probs)
+            action = dist.sample()
+            action_one_hot = torch.nn.functional.one_hot(action, num_classes = int(self.action_dim/self.n_agents))
 
-    def evaluate(self, state, action): 
-        action_mean = self.actor(state.float())
-        action_var = self.action_var.expand_as(action_mean)
-        cov_mat = torch.diag_embed(action_var).to(device)
+            return action_one_hot.reshape(-1).detach(), dist.log_prob(action).detach()
 
-        dist = MultivariateNormal(action_mean, cov_mat)
+    def evaluate(self, state, action):
+        if self.is_discrete == 0:
+            action_mean = self.actor(state.float())
+            action_var = self.action_var.expand_as(action_mean)
+            cov_mat = torch.diag_embed(action_var).to(device)
 
-        action_logprobs = dist.log_prob(action)
-        dist_entropy = dist.entropy()
-        state_value = self.critic(state.float())
+            dist = MultivariateNormal(action_mean, cov_mat)
 
-        return action_logprobs, torch.squeeze(state_value), dist_entropy
+            action_logprobs = dist.log_prob(action)
+            dist_entropy = dist.entropy()
+            state_value = self.critic(state.float())
+            
+            return action_logprobs, torch.squeeze(state_value), dist_entropy
+        else:
+            logits = self.actor(state)
+            logits = logits.reshape(-1, self.n_agents, int(self.action_dim/self.n_agents))
+            sm = nn.Softmax(dim=-1)
+            action_probs = sm(logits)
+            dist = Categorical(action_probs)
+
+            #converting back to int
+            action = action.reshape(-1, self.n_agents, int(self.action_dim/self.n_agents))
+            action = torch.argmax(action, dim=-1)
+            
+            action_logprobs = dist.log_prob(action)
+            dist_entropy = dist.entropy()
+
+            state_value = self.critic(state.float())
+
+            return action_logprobs, torch.squeeze(state_value), dist_entropy
+
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer):
+    def __init__(self, state_dim, action_dim, action_std, n_agents, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer, is_discrete):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = K_epochs
 
-        self.policy = ActorCritic(state_dim, action_dim, action_std, actor_layer, critic_layer).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, action_std, n_agents, actor_layer, critic_layer, is_discrete).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
 
-        self.policy_old = ActorCritic(state_dim, action_dim, action_std, actor_layer, critic_layer).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, action_std, n_agents, actor_layer, critic_layer, is_discrete).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
         self.action_dim = action_dim
+        self.n_agents = n_agents
+        self.is_discrete = is_discrete
 
     def select_action(self, state):
         state = torch.FloatTensor(state.reshape(1, -1)).to(device)
@@ -126,7 +164,7 @@ class PPO:
         # convert list to tensor
         old_states = torch.tensor(memory.states).to(device).detach()
         old_actions = torch.tensor(memory.actions).to(device).detach() 
-        old_logprobs = torch.tensor(memory.logprobs).to(device).detach() 
+        old_logprobs = torch.tensor(memory.logprobs).squeeze().to(device).detach() 
 
         # Optimize policy for K epochs:
         for _ in range(self.K_epochs):
@@ -138,6 +176,8 @@ class PPO:
 
             # Finding Surrogate Loss:
             advantages = rewards - state_values.detach()
+            if self.is_discrete == 1:
+                advantages = advantages.reshape(-1, 1)
             surr1 = ratios * advantages
             surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
             critic_loss =  0.5 * self.MseLoss(state_values, rewards)
