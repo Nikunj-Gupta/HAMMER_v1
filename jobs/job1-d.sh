@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --mem=5000M
-#SBATCH --time=00-10:00
+#SBATCH --time=00-02:30
 #SBATCH --account=def-mtaylor3
 tensorboard --logdir=logs/ --host 0.0.0.0 &
 python ../hammer-cn.py --config ../configs/2021/cn/hyperparams.yaml --maxepisodes 500000 --expname hammer-prevactionsno--partialobsyes--sharedparamsno--meslen2--discretemes1 --discretemes 1 --hammer 1 --randomseed 685 --meslen 2 --prevactions 0 --partialobs 1 --sharedparams 0
