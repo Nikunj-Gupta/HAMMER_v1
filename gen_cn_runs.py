@@ -3,7 +3,7 @@ codes = {
     "CN": {
         "script": "../../../hammer-cn.py", 
         "config": "../../../configs/2021/cn/hyperparams.yaml", 
-        "dumpdir": "runs/2021/newruns", 
+        "dumpdir": "runs/2021/runs-continuous-mes", 
         "maxepisodes": 50000
     }, 
 }
@@ -16,7 +16,7 @@ fixed_text = "#!/bin/bash\n"\
 
 
 for hammer in [0, 1]: 
-    for discretemes in [0, 1]: 
+    for discretemes in [0]: 
         for prevactions in [0, 1]: 
             for heterogeneity in [0, 1]: 
                 for partialobs in [0, 1]: 
@@ -31,6 +31,7 @@ for hammer in [0, 1]:
                                 expname += "-partialobsyes-" if partialobs else "-partialobsno-"
                                 expname += "-sharedparamsyes-" if sharedparams else "-sharedparamsno-" 
                                 expname += "-heterogeneityyes-" if heterogeneity else "-heterogeneityno-" 
+                                expname += "-discretemes-" if discretemes else "-continuousmes-" 
                                 # expname += "-rs" + str(seed) + "-"
                                 if hammer: expname += "-meslen" + str(meslen) + "-" 
                                 code = "CN" 
@@ -41,6 +42,7 @@ for hammer in [0, 1]:
                                     "--expname", expname, 
                                     "--hammer", str(hammer), 
                                     # "--randomseed", str(seed), 
+                                    "--discretemes", str(discretemes), 
                                     "--meslen", str(meslen), 
                                     "--prevactions", str(prevactions), 
                                     "--partialobs", str(partialobs), 
