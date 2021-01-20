@@ -18,7 +18,7 @@ import json
 
 def preprocess_one_obs(obs, which=1, limit=10): 
     agent = "agent_" + str(which) 
-    obs[agent][limit:] = [0]*(len(obs["agent_0"])-(limit)) 
+    obs[agent][limit:] = [0.]*(len(obs["agent_0"])-(limit)) 
     return obs 
 
 def preprocess_obs(obs, limit=10): 

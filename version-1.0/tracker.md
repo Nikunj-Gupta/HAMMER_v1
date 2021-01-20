@@ -1,4 +1,0 @@
-- multiwalker-1: message_len 4 
-- multiwalker-2: message_len 20 
-- multiwalker-3: message_len 25 
-- multiwalker-4: baseline  
