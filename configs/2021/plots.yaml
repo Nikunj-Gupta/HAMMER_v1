@@ -1,0 +1,30 @@
+fig1: 
+  IL: 
+    label: Independent Learners (No Parameter Sharing) 
+    filename: /home/nikunj/work/HAMMER/runs/local-trials/check/logs/il-trial-2/events.out.tfevents.1610742394.nikunj-HP-Pavilion-Notebook 
+    smooth: 1000 
+    ignore_start: 500 
+    ignore_end: 16500 
+  Hammer: 
+    label: HAMMER on Independent Learners with no parameter sharing 
+    filename: /home/nikunj/work/HAMMER/runs/local-trials/check/logs/il-trial-2/events.out.tfevents.1610742394.nikunj-HP-Pavilion-Notebook 
+    smooth: 1000 
+    ignore_start: 500 
+    ignore_end: 16500 
+
+fig2: 
+  IL-sharedparams: 
+  
+    label: Independent Learners (Parameter Sharing) 
+    filename: /home/nikunj/work/HAMMER/runs/local-trials/check/logs/il-trial-2/events.out.tfevents.1610742394.nikunj-HP-Pavilion-Notebook 
+    smooth: 1000 
+    ignore_start: 500 
+    ignore_end: 16500 
+
+  Hammer-il-sharedparams: 
+    label: HAMMER on Independent Learners with Parameter Sharing 
+    filename: /home/nikunj/work/HAMMER/runs/local-trials/check/logs/il-trial-2/events.out.tfevents.1610742394.nikunj-HP-Pavilion-Notebook 
+    smooth: 1000 
+    ignore_start: 500 
+    ignore_end: 16500 
+
