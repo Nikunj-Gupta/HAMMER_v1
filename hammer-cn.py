@@ -238,6 +238,7 @@ def run(args):
             global_agent_state = np.concatenate([global_agent_state, prev_actions])
             global_agent_state = global_agent_state
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
