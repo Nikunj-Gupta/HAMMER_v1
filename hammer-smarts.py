@@ -253,7 +253,8 @@ def main(scenarios, headless, args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
+    parser.add_argument("--scenario", type=str, default='../SMARTS/benchmark/scenarios/intersections/4lane', help="config file name")
+    parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="scenario file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
     parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
@@ -279,7 +280,7 @@ if __name__ == "__main__":
     args = parser.parse_args() 
 
     main(
-        scenarios=["../SMARTS/benchmark/scenarios/intersections/4lane"],
+        scenarios=args.scenario,
         headless=args.render,
         args = args,
     )

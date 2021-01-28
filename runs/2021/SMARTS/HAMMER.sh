@@ -7,4 +7,4 @@ export SUMO_HOME=$EBROOTSUMO
 source ~/VENV/bin/activate
 
 tensorboard --logdir=logs/ --host 0.0.0.0 &
-time python ../../../hammer-smarts.py --config ../../../configs/2021/cn/hyperparams.yaml --expname hammer-smarts --hammer 1 --render False
+time python ../../../hammer-smarts.py --config ../../../configs/2021/cn/hyperparams.yaml --scenario ../../../../SMARTS/benchmark/scenarios/intersections/4lane --expname hammer-smarts --hammer 1 --render False
