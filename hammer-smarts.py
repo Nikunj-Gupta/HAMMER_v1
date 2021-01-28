@@ -280,7 +280,7 @@ if __name__ == "__main__":
     args = parser.parse_args() 
 
     main(
-        scenarios=args.scenario,
+        scenarios=[args.scenario],
         headless=args.render,
         args = args,
     )
