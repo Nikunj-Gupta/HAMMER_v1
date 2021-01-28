@@ -280,6 +280,6 @@ if __name__ == "__main__":
 
     main(
         scenarios=["../SMARTS/benchmark/scenarios/intersections/4lane"],
-        headless=False,
+        headless=args.render,
         args = args,
     )
