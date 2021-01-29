@@ -67,6 +67,7 @@ def main(scenarios, headless, args):
         scenarios=scenarios,
         agent_specs=agent_specs,
         sim_name=args.expname,
+        sumo_headless=headless, 
         headless=headless,
         seed=args.randomseed,
     )
