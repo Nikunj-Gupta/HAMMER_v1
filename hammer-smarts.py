@@ -266,13 +266,13 @@ if __name__ == "__main__":
     parser.add_argument("--partialobs", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
-    parser.add_argument("--maxcycles", type=int, default=25) 
+    parser.add_argument("--maxcycles", type=int, default=None) 
 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--discretemes", type=int, default=1)
     parser.add_argument("--randomseed", type=int, default=10)
-    parser.add_argument("--render", type=bool, default=False)
+    parser.add_argument("--headless", type=bool, default=False)
 
     parser.add_argument("--saveinterval", type=int, default=5000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
@@ -281,6 +281,6 @@ if __name__ == "__main__":
 
     main(
         scenarios=[args.scenario],
-        headless=args.render,
+        headless= args.headless,
         args = args,
     )
