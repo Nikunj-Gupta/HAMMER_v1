@@ -39,9 +39,9 @@ def run(args):
         print("Using Heterogeneous Local Agents") 
 
     if args.heterogeneity: 
-        obs_dim = len(preprocess_one_obs(env.reset())["agent_0"]) 
+        obs_dim = len(preprocess_one_obs(env.reset(), limit=args.limit)["agent_0"]) 
     elif args.partialobs:  
-        obs_dim = len(preprocess_obs(env.reset())["agent_0"])  
+        obs_dim = len(preprocess_obs(env.reset(), limit=args.limit)["agent_0"])  
     else:
         obs_dim = env.observation_spaces[env.agents[0]].shape[0] 
         
@@ -127,9 +127,9 @@ def run(args):
     global_timestep = 0
 
     if args.heterogeneity: 
-        obs = preprocess_one_obs(env.reset())
+        obs = preprocess_one_obs(env.reset(), limit=args.limit)
     elif args.partialobs: 
-        obs = preprocess_obs(env.reset())
+        obs = preprocess_obs(env.reset(), limit=args.limit)
     else:  
         obs = env.reset() 
 
@@ -167,9 +167,9 @@ def run(args):
 
         next_obs, rewards, is_terminals, infos = env.step(actions) 
         if args.partialobs: 
-            next_obs = preprocess_obs(next_obs) 
+            next_obs = preprocess_obs(next_obs, limit=args.limit) 
         elif args.heterogeneity: 
-            next_obs = preprocess_one_obs(next_obs) 
+            next_obs = preprocess_one_obs(next_obs, limit=args.limit) 
 
         for i, agent in enumerate(agents):
             local_memory[i].rewards.append(rewards[agent])
@@ -207,9 +207,9 @@ def run(args):
             i_episode += 1
             writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
             if args.heterogeneity: 
-                obs = preprocess_one_obs(env.reset()) 
+                obs = preprocess_one_obs(env.reset(), limit=args.limit) 
             elif args.partialobs: 
-                obs = preprocess_obs(env.reset()) 
+                obs = preprocess_obs(env.reset(), limit=args.limit) 
             else: 
                 obs = env.reset() 
             print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
@@ -254,6 +254,7 @@ if __name__ == '__main__':
     parser.add_argument("--partialobs", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
+    parser.add_argument("--limit", type=int, default=4) 
     parser.add_argument("--maxcycles", type=int, default=25) 
 
 
