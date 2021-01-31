@@ -3,8 +3,7 @@ all:
 # 		PYTHONPATH=$(PWD) python3 multiwalker.py --config configs/multiwalker/config.yaml
 get_logs: 
 		clear 
-		scp -r nikunjg@graham.computecanada.ca:/home/nikunjg/projects/def-mtaylor3/nikunjg/HAMMER/runs/2021/newruns/logs /home/nikunj/work/HAMMER/runs/2021/newruns 
-		scp -r nikunjg@graham.computecanada.ca:/home/nikunjg/projects/def-mtaylor3/nikunjg/HAMMER/runs/2021/runs-continuous-mes/logs /home/nikunj/work/HAMMER/runs/2021/runs-continuous-mes 
+		scp -r nikunjg@graham.computecanada.ca:/home/nikunjg/projects/def-mtaylor3/nikunjg/HAMMER/runs/2021/modified_partialobs/logs /home/nikunj/work/HAMMER/runs/2021/modified_partialobs 
 
 
 tensorboard: 
@@ -13,3 +12,8 @@ tensorboard:
 plot: 
 	clear 
 	python3 plots.py 
+
+gen_plots: 
+
+	clear 
+	python3 merge_randomseeds_and_plot.py 
