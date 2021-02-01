@@ -145,10 +145,11 @@ def run(args):
 
     for timestep in count(1):
         if MAIN: 
-            global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state) 
+            if args.randommes: 
+                global_agent_output = np.random.uniform(0, 1, args.nagents*args.meslen) 
+            else: 
+                global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state) 
             global_agent_output = global_agent_output.reshape(args.nagents, args.meslen) 
-            # if args.meslen == 1: 
-            #     global_agent_output = [np.array([i]) for i in global_agent_output] 
 
         action_array = [] 
         for i, agent in enumerate(agents): 
@@ -176,7 +177,7 @@ def run(args):
             local_memory[i].is_terminals.append(is_terminals[agent])
             episode_rewards += rewards[agent]
 
-        if MAIN: 
+        if MAIN and (not args.randommes): 
             global_agent_output = global_agent_output.reshape(-1) 
             global_memory.states.append(global_agent_state)
             global_memory.actions.append(global_agent_output)
@@ -196,7 +197,7 @@ def run(args):
                     local_agent[i].update(local_memory[i], writer, i_episode)
             [mem.clear_memory() for mem in local_memory]
 
-        if MAIN and timestep % config["global"]["update_timestep"] == 0:
+        if MAIN and (timestep % config["global"]["update_timestep"] == 0) and (not args.randommes): 
             global_agent.update(global_memory)
             global_memory.clear_memory()
 
@@ -254,8 +255,9 @@ if __name__ == '__main__':
     parser.add_argument("--partialobs", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
-    parser.add_argument("--limit", type=int, default=4) 
+    parser.add_argument("--limit", type=int, default=10) 
     parser.add_argument("--maxcycles", type=int, default=25) 
+    parser.add_argument("--randommes", type=int, default=0) 
 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
