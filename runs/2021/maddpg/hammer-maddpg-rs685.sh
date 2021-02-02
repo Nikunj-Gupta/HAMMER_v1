@@ -3,4 +3,4 @@
 #SBATCH --time=00-8:00
 #SBATCH --account=def-mtaylor3
 tensorboard --logdir=logs/ --host 0.0.0.0 &
-time python hammer-maddpg.py  --model_name hammer-maddpg-rs685 --randomseed 685
+time python ../../../hammer-maddpg.py  --model_name hammer-maddpg-rs685 --randomseed 685
