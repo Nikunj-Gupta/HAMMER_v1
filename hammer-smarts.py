@@ -273,7 +273,7 @@ if __name__ == "__main__":
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--discretemes", type=int, default=1)
     parser.add_argument("--randomseed", type=int, default=10)
-    parser.add_argument("--headless", type=bool, default=False)
+    parser.add_argument("--headless", type=bool, default=True)
 
     parser.add_argument("--saveinterval", type=int, default=5000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
