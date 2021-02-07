@@ -246,14 +246,14 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
-    parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
+    parser.add_argument("--hammer", type=int, default=0, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--prevactions", type=int, default=0) 
     parser.add_argument("--partialobs", type=int, default=1) 
-    parser.add_argument("--sharedparams", type=int, default=0) 
+    parser.add_argument("--sharedparams", type=int, default=1) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=10) 
     parser.add_argument("--maxcycles", type=int, default=25) 
@@ -265,7 +265,7 @@ if __name__ == '__main__':
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
-    parser.add_argument("--saveinterval", type=int, default=5000) 
+    parser.add_argument("--saveinterval", type=int, default=10_000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
     
