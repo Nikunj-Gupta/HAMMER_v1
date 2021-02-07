@@ -1,5 +1,7 @@
 import argparse
 from itertools import count
+from pathlib import Path
+import imageio
 
 # from tensorboardX import SummaryWriter
 
@@ -144,9 +146,14 @@ def run(args = None):
         is_discrete = args.discretemes
     )
 
-    load(0, "save-dir/45000_IL/local_agent-0.pth")
-    load(1, "save-dir/45000_IL/local_agent-1.pth")
-    global_agent.policy_old.load_state_dict(torch.load("save-dir/45000_IL/global_agent.pth"))
+    # load(0, "runs/2021/sr/save-dir/300000_IL-sr/local_agent-0.pth")
+    # load(1, "runs/2021/sr/save-dir/300000_IL-sr/local_agent-1.pth")
+    # global_agent.policy_old.load_state_dict(torch.load("runs/2021/sr/save-dir/300000_IL-sr/global_agent.pth"))
+
+
+    load(0, "runs/2021/sr/save-dir/165000_HAMMER-sr-cont/local_agent-0.pth")
+    load(1, "runs/2021/sr/save-dir/165000_HAMMER-sr-cont/local_agent-1.pth")
+    global_agent.policy_old.load_state_dict(torch.load("runs/2021/sr/save-dir/165000_HAMMER-sr-cont/global_agent.pth"))
 
     # load(0, "save-dir/25000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-2-hammer-1-meslen-4/local_agent-0.pth")
     # load(1, "save-dir/25000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-2-hammer-1-meslen-4/local_agent-1.pth")
@@ -175,9 +182,11 @@ def run(args = None):
     actor_loss = [0 for agent in agents]
     critic_loss = [0 for agent in agents]
     episodic_messages = [[] for agent in agents]
+    frames = []
 
     for timestep in count(1):
-        env.render()
+        # env.render()
+        frames.append(env.render('rgb_array'))
         if MAIN: 
             if args.randommes: 
                 global_agent_output = np.random.uniform(0, 1, args.nagents*args.meslen) 
@@ -216,6 +225,16 @@ def run(args = None):
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
+
+            ## Write gif
+            gif_num = 0
+            gif_path = Path('plots/')
+            while (gif_path / ('%i_%i.gif' % (i_episode, episode_rewards/args.nagents))).exists():
+                gif_num += 1
+            imageio.mimsave(str(gif_path / ('%i_%i.gif' % (i_episode, episode_rewards/args.nagents))),
+                            frames, duration = 1/10.0)
+            frames = []
+
             if MAIN:
                 analyse_message(args.discretemes, episodic_messages)
             # writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
@@ -242,7 +261,7 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
-    parser.add_argument("--hammer", type=int, default=0, help="1 for hammer; 0 for IL")
+    parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=2)
 
@@ -252,12 +271,12 @@ if __name__ == '__main__':
     parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=11) 
-    parser.add_argument("--maxcycles", type=int, default=25) 
+    parser.add_argument("--maxcycles", type=int, default=100) 
     parser.add_argument("--randommes", type=int, default=0) 
 
 
-    parser.add_argument("--meslen", type=int, default=4, help="message length")
-    parser.add_argument("--discretemes", type=int, default=1)
+    parser.add_argument("--meslen", type=int, default=2, help="message length")
+    parser.add_argument("--discretemes", type=int, default=0)
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
