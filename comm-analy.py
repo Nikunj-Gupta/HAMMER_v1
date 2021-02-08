@@ -144,10 +144,10 @@ def run(args = None):
         is_discrete = args.discretemes
     )
 
-    load(0, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-0.pth")
-    load(1, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-1.pth")
-    load(2, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-2.pth")
-    global_agent.policy_old.load_state_dict(torch.load("save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/global_agent.pth"))
+    load(0, "runs/2021/new_shared/save-dir/350000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-3-hammer-1-meslen-4/local_agent.pth")
+    load(1, "runs/2021/new_shared/save-dir/350000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-3-hammer-1-meslen-4/local_agent.pth")
+    load(2, "runs/2021/new_shared/save-dir/350000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-3-hammer-1-meslen-4/local_agent.pth")
+    global_agent.policy_old.load_state_dict(torch.load("runs/2021/new_shared/save-dir/350000_cn----L-lr-0.0003-updatestep-800-epoch-8----G-lr-0.0003-updatestep-800-epoch-8----nagents-3-hammer-1-meslen-4/global_agent.pth"))
 
 
     # logging variables
@@ -214,7 +214,8 @@ def run(args = None):
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
-            analyse_message(args.discretemes, episodic_messages)
+            if MAIN:
+                analyse_message(args.discretemes, episodic_messages)
             # writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
             if args.heterogeneity: 
                 obs = preprocess_one_obs(env.reset(), limit=args.limit) 
@@ -243,17 +244,17 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--prevactions", type=int, default=0) 
     parser.add_argument("--partialobs", type=int, default=1) 
     parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=10) 
-    parser.add_argument("--maxcycles", type=int, default=25) 
+    parser.add_argument("--maxcycles", type=int, default=250) 
     parser.add_argument("--randommes", type=int, default=0) 
 
 
-    parser.add_argument("--meslen", type=int, default=3, help="message length")
+    parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--discretemes", type=int, default=1)
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
