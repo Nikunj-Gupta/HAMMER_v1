@@ -102,11 +102,11 @@ def run(args):
             episode_rewards = 0
 
         # save every 50 episodes
-        # if i_episode % args.saveinterval == 0:
-        #     if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
-        #         os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
-        #     torch.save(HAMMER.policy.state_dict(),
-        #             os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent.pth"))        
+        if i_episode % args.saveinterval == 0:
+            if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
+                os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
+            torch.save(HAMMER.policy.state_dict(),
+                    os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent.pth"))        
         if i_episode == args.maxepisodes:
             break
 
@@ -118,14 +118,13 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default='HAMMER-with-gradient')
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=30000) 
+    parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--maxcycles", type=int, default=25) 
-
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
-    parser.add_argument("--saveinterval", type=int, default=5000) 
+    parser.add_argument("--saveinterval", type=int, default=50_000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
     

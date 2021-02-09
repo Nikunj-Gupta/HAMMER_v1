@@ -178,10 +178,8 @@ class PPO:
             old_global_state = torch.stack(self.global_memory.states) # 800x1x54
             old_global_state = torch.squeeze(old_global_state) # 800x54
             
-            ################## CAVEAT: This is redundant, slows the process!#############
-
-
             for i in range(self.n_agents):
+                ################## CAVEAT: This is redundant, slows the process!#############
                 message = self.policy.global_actor(old_global_state) # 3x800x4
 
                 # state: 800x18 Message: 800x4   new:800x22 ; so we use dimension 1
