@@ -69,7 +69,7 @@ def run(args = None):
     else:
         obs_dim = env.observation_spaces[env.agents[0]].shape[0] 
         
-    action_dim = env.action_spaces[env.agents[0]].n
+    action_dim = 5
 
     agent_action_space = env.action_spaces[env.agents[0]]
 
@@ -232,7 +232,7 @@ def run(args = None):
             while (gif_path / ('%i_%i.gif' % (i_episode, episode_rewards/args.nagents))).exists():
                 gif_num += 1
             imageio.mimsave(str(gif_path / ('%i_%i.gif' % (i_episode, episode_rewards/args.nagents))),
-                            frames, duration = 1/10.0)
+                            frames)
             frames = []
 
             if MAIN:
@@ -276,7 +276,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument("--meslen", type=int, default=2, help="message length")
-    parser.add_argument("--discretemes", type=int, default=0)
+    parser.add_argument("--discretemes", type=int, default=1)
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
