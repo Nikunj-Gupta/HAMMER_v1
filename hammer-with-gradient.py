@@ -83,9 +83,9 @@ def run(args):
         
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
-        HAMMER.memory_record(rewards, is_terminals)            
+        HAMMER.memory_record(rewards, is_terminals)
+        episode_rewards += list(rewards.values())[0]         
         # update if its time
-
         if timestep % config["global"]["update_timestep"] == 0: 
             HAMMER.update()
             [mem.clear_memory() for mem in HAMMER.memory]
@@ -96,9 +96,9 @@ def run(args):
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
-            writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
+            writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards, i_episode)
             obs = env.reset() 
-            print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards/args.nagents))
+            print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards))
             episode_rewards = 0
 
         # save every 50 episodes
