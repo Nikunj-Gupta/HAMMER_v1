@@ -8,7 +8,7 @@ from torch.distributions import Categorical
 import gym
 import numpy as np
 from tensorboardX import SummaryWriter
-
+# torch.autograd.set_detect_anomaly(True)
 device = torch.device("cpu") 
 
 class Memory:
@@ -52,8 +52,9 @@ class ActorCritic(nn.Module):
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
             layers.append(nn.Tanh()) 
-        layers.append(nn.Linear(actor_layer[-1], self.meslen * self.n_agents)) 
-        self.global_actor = nn.Sequential(*layers) 
+        self.global_encoder = nn.Sequential(*layers)
+
+        self.global_actor_decoder = nn.ModuleList([nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)])
         
         # critic
         layers = [] 
@@ -64,7 +65,13 @@ class ActorCritic(nn.Module):
             layers.append(nn.Tanh()) 
         layers.append(nn.Linear(critic_layer[-1], 1)) 
         self.critic = nn.Sequential(*layers) 
-        
+
+    def global_actor(self, state):
+        latent_vector = self.global_encoder(state)
+        message = []
+        for decoder in self.global_actor_decoder:
+            message.append(decoder(latent_vector))
+        return message
 
     def forward(self):
         raise NotImplementedError
@@ -78,12 +85,11 @@ class ActorCritic(nn.Module):
         
         # Calculating messages
         global_actor_message = self.global_actor(global_agent_state)
-        global_actor_message = global_actor_message.reshape(self.n_agents, self.meslen) 
 
         action_array = []
         for i, agent in enumerate(self.agents):
             state = torch.FloatTensor(obs[agent])
-            local_state = torch.cat((state, global_actor_message[i].detach()), 0).to(device)
+            local_state = torch.cat((state, torch.squeeze(global_actor_message[i]).detach()), 0).to(device)
             action_probs = self.actor(local_state)
             dist = Categorical(action_probs)
             action = dist.sample()
@@ -171,15 +177,15 @@ class PPO:
             
             old_global_state = torch.stack(self.global_memory.states) # 800x1x54
             old_global_state = torch.squeeze(old_global_state) # 800x54
-
             
+            ################## CAVEAT: This is redundant, slows the process!#############
+
+
             for i in range(self.n_agents):
-                ################## CAVEAT: This is redundant, slows the process!#############
-                message = self.policy.global_actor(old_global_state) # 800x12
-                message = message.reshape(-1, self.n_agents, self.meslen) # 800x3x4
+                message = self.policy.global_actor(old_global_state) # 3x800x4
 
                 # state: 800x18 Message: 800x4   new:800x22 ; so we use dimension 1
-                old_state = torch.cat((old_states_list[i], message[:, i, :]), 1)
+                old_state = torch.cat((old_states_list[i], message[i]), 1)
                 # Evaluating old actions and values :
                 logprobs, state_values, dist_entropy = self.policy.evaluate(old_state, old_actions_list[i])
 
@@ -198,6 +204,7 @@ class PPO:
                 self.optimizer.zero_grad()
                 loss.mean().backward()
                 self.optimizer.step()
+
             # if writer is not None and epoch == self.K_epochs-1:
             #     writer.add_scalar('actor_loss/local_agent', actor_loss.mean(), i_episode)
             #     writer.add_scalar('critic_loss/local_agent', critic_loss.mean(), i_episode)
