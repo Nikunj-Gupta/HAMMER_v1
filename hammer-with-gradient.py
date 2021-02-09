@@ -79,16 +79,17 @@ def run(args):
     for timestep in count(1):
 
         action_array = [] 
-        actions, log_probs = HAMMER.policy_old.act(obs)
+        actions = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
         
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
-        HAMMER.memory_record(obs, actions, log_probs, rewards, is_terminals)            
+        HAMMER.memory_record(rewards, is_terminals)            
         # update if its time
 
         if timestep % config["global"]["update_timestep"] == 0: 
             HAMMER.update()
             [mem.clear_memory() for mem in HAMMER.memory]
+            HAMMER.global_memory.clear_memory()
 
         obs = next_obs
 
@@ -101,19 +102,11 @@ def run(args):
             episode_rewards = 0
 
         # save every 50 episodes
-        if i_episode % args.saveinterval == 0:
-            if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
-                os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
-            if args.sharedparams: 
-                torch.save(local_agent.policy.state_dict(),
-                        os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent.pth"))
-            else: 
-                for i in range(args.nagents): 
-                    torch.save(local_agent[i].policy.state_dict(),
-                        os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent-"+str(i)+".pth"))
-            torch.save(global_agent.policy.state_dict(),
-                    os.path.join(args.savedir, str(i_episode)+"_"+expname, "global_agent.pth"))
-        
+        # if i_episode % args.saveinterval == 0:
+        #     if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
+        #         os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
+        #     torch.save(HAMMER.policy.state_dict(),
+        #             os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent.pth"))        
         if i_episode == args.maxepisodes:
             break
 

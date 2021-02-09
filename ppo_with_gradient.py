@@ -28,73 +28,73 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, single_state_dim, action_dim, n_agents, actor_layer, critic_layer, is_discrete):
+    def __init__(self, single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents):
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
+
+        self.meslen = meslen
+        self.n_agents = n_agents
+        self.agents = agents
         layers = [] 
-        layers.append(nn.Linear(single_state_dim + meslen, actor_layer[0])) 
+        layers.append(nn.Linear(single_state_dim + self.meslen, actor_layer[0])) 
         layers.append(nn.Tanh()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
             layers.append(nn.Tanh()) 
-        layers.append(nn.Linear(actor_layer[-1], action_dim)) 
+        layers.append(nn.Linear(actor_layer[-1], single_action_dim)) 
         layers.append(nn.Softmax(dim=-1))
         self.actor = nn.Sequential(*layers) 
         
         # global actor
         layers = [] 
-        layers.append(nn.Linear(single_state_dim * n_agents, actor_layer[0])) 
+        layers.append(nn.Linear(single_state_dim * self.n_agents, actor_layer[0])) 
         layers.append(nn.Tanh()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
             layers.append(nn.Tanh()) 
-        layers.append(nn.Linear(actor_layer[-1], meslen)) 
+        layers.append(nn.Linear(actor_layer[-1], self.meslen * self.n_agents)) 
         self.global_actor = nn.Sequential(*layers) 
         
         # critic
         layers = [] 
-        layers.append(nn.Linear(state_dim + meslen, critic_layer[0])) 
+        layers.append(nn.Linear(single_state_dim + self.meslen, critic_layer[0])) 
         layers.append(nn.Tanh()) 
         for i in range(len(critic_layer[1:])): 
             layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
             layers.append(nn.Tanh()) 
         layers.append(nn.Linear(critic_layer[-1], 1)) 
         self.critic = nn.Sequential(*layers) 
-
-        # global critic
-        layers = [] 
-        layers.append(nn.Linear(state_dim * n_agents, critic_layer[0])) 
-        layers.append(nn.Tanh()) 
-        for i in range(len(critic_layer[1:])): 
-            layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
-            layers.append(nn.Tanh()) 
-        layers.append(nn.Linear(critic_layer[-1], n_agents)) 
-        self.global_critic = nn.Sequential(*layers)
         
-        self.action_dim = action_dim
-        self.is_discrete = is_discrete
-        self.n_agents = n_agents
 
     def forward(self):
         raise NotImplementedError
 
-    def act(self, obs, memory):
+    def act(self, obs, memory, global_memory):
         global_agent_state = [obs[i] for i in obs]
-        global_agent_state = (global_agent_state).reshape((-1,))
+        global_agent_state = torch.FloatTensor(global_agent_state).to(device).reshape(1, -1)
+        
+        # Adding to global memory
+        global_memory.states.append(global_agent_state)
+        
+        # Calculating messages
         global_actor_message = self.global_actor(global_agent_state)
-        global_actor_message = global_actor_message.reshape(self.nagents, self.meslen) 
+        global_actor_message = global_actor_message.reshape(self.n_agents, self.meslen) 
+
         action_array = []
-        log_prob_array = []
-        for i, agent in self.agents:
-            local_state = np.concatenate([obs[agent], global_actor_message[i]])
-            local_state = torch.from_numpy(local_state).float().to(device)
+        for i, agent in enumerate(self.agents):
+            state = torch.FloatTensor(obs[agent])
+            local_state = torch.cat((state, global_actor_message[i].detach()), 0).to(device)
             action_probs = self.actor(local_state)
             dist = Categorical(action_probs)
             action = dist.sample()
             action_array.append(action.item())
-            log_prob_array.append(dist.log_prob(action))
-        return {agent : action_array[i] for i, agent in enumerate(self.agents)} , {agent : log_prob_array[i] for i, agent in enumerate(self.agents)}  
+            
+            # Adding to memory:
+            memory[i].states.append(state)
+            memory[i].actions.append(action)
+            memory[i].logprobs.append(dist.log_prob(action))
 
+        return {agent : action_array[i] for i, agent in enumerate(self.agents)} 
 
     def evaluate(self, state, action):
         action_probs = self.actor(state)
@@ -103,7 +103,8 @@ class ActorCritic(nn.Module):
         action_logprobs = dist.log_prob(action)
         dist_entropy = dist.entropy() 
 
-        state_value = self.critic(state)
+        # Messages from global_actor should be detached!!
+        state_value = self.critic(state.detach())
 
         return action_logprobs, torch.squeeze(state_value), dist_entropy
 
@@ -117,31 +118,24 @@ class PPO:
         self.K_epochs = K_epochs
         self.agents = agents
         self.memory = [Memory() for _ in self.agents]
+        self.global_memory = Memory()
 
-        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, action_std, n_agents, actor_layer, critic_layer, is_discrete).to(device)
+        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents=self.agents).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
 
-        self.policy_old = ActorCritic(state_dim, action_dim, action_std, n_agents, actor_layer, critic_layer, is_discrete).to(device)
+        self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen=meslen, agents=self.agents).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
-        self.action_dim = action_dim
+        self.single_action_dim = single_action_dim
         self.n_agents = n_agents
-        self.meslen = meslen
-
-    def select_action(self, state):
-        state = torch.FloatTensor(state.reshape(1, -1)).to(device)
-        action, action_logprobs = self.policy_old.act(state)
-        return action.cpu().data.numpy().squeeze(), action_logprobs.cpu().data.numpy().squeeze()
+        self.meslen = meslen        
 
     def load(self, filename):
         self.policy.load_state_dict(torch.load(filename))
 
-    def memory_record(self, obs, actions, log_probs, rewards, is_terminals):
+    def memory_record(self, rewards, is_terminals):
         for i, agent in enumerate(self.agents):
-            self.memory[i].states.append(obs[agent])
-            self.memory[i].actions.append(actions[agent])
-            self.memory[i].logprobs.append(log_probs[agent])
             self.memory[i].rewards.append(rewards[agent])
             self.memory[i].is_terminals.append(is_terminals[agent])
 
@@ -167,17 +161,27 @@ class PPO:
 
             # making lists to update
             rewards_list.append(rewards)
-            old_states_list.append(torch.squeeze(torch.tensor(self.memory[i].states, dtype=torch.float32).to(device)).detach())
             old_actions_list.append(torch.squeeze(torch.tensor(self.memory[i].actions).to(device)).detach())
             old_logprobs_list.append(torch.squeeze(torch.tensor(self.memory[i].logprobs).to(device)).detach()) 
-
+            old_states_list.append(torch.squeeze(torch.stack(self.memory[i].states).to(device)).detach())
+        
         # Optimize policy for K epochs: 
 
         for epoch in range(self.K_epochs): 
-            for i in range(self.n_agents):
+            
+            old_global_state = torch.stack(self.global_memory.states) # 800x1x54
+            old_global_state = torch.squeeze(old_global_state) # 800x54
 
+            
+            for i in range(self.n_agents):
+                ################## CAVEAT: This is redundant, slows the process!#############
+                message = self.policy.global_actor(old_global_state) # 800x12
+                message = message.reshape(-1, self.n_agents, self.meslen) # 800x3x4
+
+                # state: 800x18 Message: 800x4   new:800x22 ; so we use dimension 1
+                old_state = torch.cat((old_states_list[i], message[:, i, :]), 1)
                 # Evaluating old actions and values :
-                logprobs, state_values, dist_entropy = self.policy.evaluate(old_states_list[i], old_actions_list[i])
+                logprobs, state_values, dist_entropy = self.policy.evaluate(old_state, old_actions_list[i])
 
                 # Finding the ratio (pi_theta / pi_theta__old): 
                 ratios = torch.exp(logprobs - old_logprobs_list[i].detach())
