@@ -34,7 +34,7 @@ def run(args):
     if args.partialobs:
         obs_dim = len(preprocess_obs(env.reset(), limit=args.limit)["agent_0"]) 
     else:
-        env.observation_spaces[env.agents[0]].shape[0]
+        obs_dim = env.observation_spaces[env.agents[0]].shape[0]
         
     action_dim = env.action_spaces[env.agents[0]].n
 
