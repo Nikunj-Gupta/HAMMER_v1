@@ -204,11 +204,11 @@ if __name__ == '__main__':
 
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--envname", type=str, default="sr")
-    parser.add_argument("--nagents", type=int, default=2)
+    parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=300_000) 
+    parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--partialobs", type=int, default=1) 
-    parser.add_argument("--sharedparams", type=int, default=0) 
+    parser.add_argument("--sharedparams", type=int, default=1) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=11) 
     parser.add_argument("--maxcycles", type=int, default=25) 
