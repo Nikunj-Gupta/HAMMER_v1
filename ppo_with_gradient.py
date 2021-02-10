@@ -8,6 +8,7 @@ from torch.distributions import Categorical
 import gym
 import numpy as np
 from tensorboardX import SummaryWriter
+from dru import DRU 
 # torch.autograd.set_detect_anomaly(True)
 device = torch.device("cpu") 
 
@@ -54,9 +55,11 @@ class ActorCritic(nn.Module):
             layers.append(nn.Tanh()) 
         self.global_encoder = nn.Sequential(*layers)
 
-        # not using nn.ModuleList to ensure that the global_actor_decoder parameters are notaken into the parameters.
+        # not using nn.ModuleList to ensure that the global_actor_decoder parameters are not taken into the parameters.
         # We want separate optimizer for decoders.
         self.global_actor_decoder = [nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)]
+
+        self.dru = DRU(hard=True) 
         
         # critic
         layers = [] 
@@ -71,8 +74,9 @@ class ActorCritic(nn.Module):
     def global_actor(self, state):
         latent_vector = self.global_encoder(state)
         message = []
-        for decoder in self.global_actor_decoder:
-            message.append(decoder(latent_vector))
+        for decoder in self.global_actor_decoder: 
+            # Obtaining message using decoder and then Passing message through DRU 
+            message.append(self.dru.forward(message=decoder(latent_vector), mode="R")) 
         return message
 
     def forward(self):
@@ -86,7 +90,7 @@ class ActorCritic(nn.Module):
         global_memory.states.append(global_agent_state)
         
         # Calculating messages
-        global_actor_message = self.global_actor(global_agent_state)
+        global_actor_message = self.global_actor(global_agent_state) 
 
         action_array = []
         for i, agent in enumerate(self.agents):
