@@ -54,7 +54,9 @@ class ActorCritic(nn.Module):
             layers.append(nn.Tanh()) 
         self.global_encoder = nn.Sequential(*layers)
 
-        self.global_actor_decoder = nn.ModuleList([nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)])
+        # not using nn.ModuleList to ensure that the global_actor_decoder parameters are notaken into the parameters.
+        # We want separate optimizer for decoders.
+        self.global_actor_decoder = [nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)]
         
         # critic
         layers = [] 
@@ -125,16 +127,17 @@ class PPO:
         self.agents = agents
         self.memory = [Memory() for _ in self.agents]
         self.global_memory = Memory()
+        self.n_agents = n_agents
 
         self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents=self.agents).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
+        self.decoder_optimizer = [torch.optim.Adam(self.policy.global_actor_decoder[i].parameters(), lr=lr, betas=betas) for i in range(self.n_agents)]
 
         self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen=meslen, agents=self.agents).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
         self.single_action_dim = single_action_dim
-        self.n_agents = n_agents
         self.meslen = meslen        
 
     def load(self, filename):
@@ -200,8 +203,17 @@ class PPO:
 
                 # take gradient step
                 self.optimizer.zero_grad()
+                self.decoder_optimizer[i].zero_grad()
                 loss.mean().backward()
+                # for j in range(self.n_agents):
+                #     print(j, self.policy.global_actor_decoder[j].weight[:10, 0])
                 self.optimizer.step()
+                self.decoder_optimizer[i].step()
+                # print("STEP")
+                # for j in range(self.n_agents):
+                #     print(j, self.policy.global_actor_decoder[j].weight[:10, 0])
+                # print()
+
 
             # if writer is not None and epoch == self.K_epochs-1:
             #     writer.add_scalar('actor_loss/local_agent', actor_loss.mean(), i_episode)
