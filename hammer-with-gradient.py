@@ -6,21 +6,35 @@ from tensorboardX import SummaryWriter
 from ppo_with_gradient import PPO
 
 from pettingzoo.mpe import simple_spread_v2
+from pettingzoo.mpe import simple_reference_v2
 from utils import read_config
 import os
 import numpy as np
 import torch
 import json 
 
-def run(args):
+def preprocess_obs(obs, limit): 
+    for i in obs: 
+        obs[i] = obs[i][:limit] 
+    return obs 
 
-    env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=args.maxcycles) 
+def run(args):
+    if args.envname == 'cn':
+        if args.partialobs == 1:
+            assert args.limit == 10
+        env = simple_spread_v2.parallel_env(N=args.nagents, local_ratio=0.5, max_cycles=args.maxcycles)
+    elif args.envname == 'sr':
+        if args.partialobs == 1:
+            assert args.limit == 11
+        env = simple_reference_v2.parallel_env(local_ratio=0.5, max_cycles=args.maxcycles)
+
     env.reset()
     agents = [agent for agent in env.agents] 
 
-    obs_space = env.observation_spaces 
-
-    obs_dim = env.observation_spaces[env.agents[0]].shape[0] 
+    if args.partialobs:
+        obs_dim = len(preprocess_obs(env.reset(), limit=args.limit)["agent_0"]) 
+    else:
+        env.observation_spaces[env.agents[0]].shape[0]
         
     action_dim = env.action_spaces[env.agents[0]].n
 
@@ -40,7 +54,7 @@ def run(args):
         np.random.seed(random_seed)
 
 
-    expname = args.expname
+    expname = args.envname if args.expname == None else args.expname
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
 
@@ -51,7 +65,7 @@ def run(args):
         single_state_dim=obs_dim, # all local observations concatenated + all agents' previous actions
         single_action_dim=action_dim,
         meslen = args.meslen, 
-        n_agents=args.nagents, # required for discrete messages
+        n_agents=len(agents), # required for discrete messages
         lr=config["global"]["lr"],
         betas=betas,
         gamma = config["main"]["gamma"],
@@ -65,16 +79,13 @@ def run(args):
     ep_reward = 0
     global_timestep = 0
 
-    obs = env.reset() 
+    if args.partialobs: 
+        obs = preprocess_obs(env.reset(), limit=args.limit)
+    else:  
+        obs = env.reset() 
 
-    # global_agent_state = [obs[i] for i in obs]
-    # global_agent_state = np.array(global_agent_state).reshape((-1,)) 
-    # if args.prevactions: 
-    #     global_agent_state = np.concatenate([global_agent_state, np.random.randint(0, action_dim, args.nagents)])
     i_episode = 0
     episode_rewards = 0
-    # actor_loss = [0 for agent in agents]
-    # critic_loss = [0 for agent in agents]
 
     for timestep in count(1):
 
@@ -91,13 +102,18 @@ def run(args):
             [mem.clear_memory() for mem in HAMMER.memory]
             HAMMER.global_memory.clear_memory()
 
+        if args.partialobs: 
+            next_obs = preprocess_obs(next_obs, limit=args.limit) 
         obs = next_obs
 
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
             writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards, i_episode)
-            obs = env.reset() 
+            if args.partialobs: 
+                obs = preprocess_obs(env.reset(), limit=args.limit)
+            else: 
+                obs = env.reset() 
             print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards))
             episode_rewards = 0
 
@@ -115,10 +131,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
 
-    parser.add_argument("--expname", type=str, default='HAMMER-with-gradient')
+    parser.add_argument("--expname", type=str, default=None)
+    parser.add_argument("--envname", type=str, default='cn')
     parser.add_argument("--nagents", type=int, default=3)
 
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
+    parser.add_argument("--partialobs", type=int, default=1) 
+    parser.add_argument("--limit", type=int, default=10) # 11 for sr, 10 for cn
     parser.add_argument("--maxcycles", type=int, default=25) 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
