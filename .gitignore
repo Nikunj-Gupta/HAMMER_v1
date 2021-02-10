@@ -4,4 +4,7 @@ save-dir/
 .vscode/
 .venv/
 local-trials/
-configs/2021/npy/
+configs/2021/npy/ 
+plots/ 
+analysis_logs/
+analysis_logs2/

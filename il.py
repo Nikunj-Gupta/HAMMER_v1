@@ -55,7 +55,7 @@ def run(args):
     else:
         obs_dim = env.observation_spaces[env.agents[0]].shape[0] 
         
-    action_dim = env.action_spaces[env.agents[0]].n
+    action_dim = env.action_spaces[env.agents[0]].n if args.envname == "cn" else 5 
 
     agent_action_space = env.action_spaces[env.agents[0]]
 
