@@ -140,7 +140,7 @@ if __name__ == '__main__':
     parser.add_argument("--limit", type=int, default=10) # 11 for sr, 10 for cn
     parser.add_argument("--maxcycles", type=int, default=25) 
 
-    parser.add_argument("--meslen", type=int, default=4, help="message length")
+    parser.add_argument("--meslen", type=int, default=2, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 

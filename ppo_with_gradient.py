@@ -91,7 +91,7 @@ class ActorCritic(nn.Module):
         action_array = []
         for i, agent in enumerate(self.agents):
             state = torch.FloatTensor(obs[agent])
-            local_state = torch.cat((state, torch.squeeze(global_actor_message[i]).detach()), 0).to(device)
+            local_state = torch.cat((state, global_actor_message[i].reshape(-1).detach()), 0).to(device)
             action_probs = self.actor(local_state)
             dist = Categorical(action_probs)
             action = dist.sample()
