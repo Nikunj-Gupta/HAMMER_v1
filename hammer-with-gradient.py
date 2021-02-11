@@ -13,6 +13,8 @@ import numpy as np
 import torch
 import json 
 
+from pathlib import Path
+
 def preprocess_obs(obs, limit): 
     for i in obs: 
         obs[i] = obs[i][:limit] 
@@ -57,6 +59,15 @@ def run(args):
     expname = args.envname if args.expname == None else args.expname
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
+    # log_dir = Path('./logs/HAMMER-gradient-analysis/')
+    # for i in count(0):
+    #     temp = log_dir/('run{}'.format(i)) 
+    #     if temp.exists():
+    #         pass
+    #     else:
+    #         writer = SummaryWriter(logdir=temp)
+    #         log_dir = temp
+    #         break
 
     betas = (0.9, 0.999)
 
@@ -140,7 +151,7 @@ if __name__ == '__main__':
     parser.add_argument("--limit", type=int, default=10) # 11 for sr, 10 for cn
     parser.add_argument("--maxcycles", type=int, default=25) 
 
-    parser.add_argument("--meslen", type=int, default=2, help="message length")
+    parser.add_argument("--meslen", type=int, default=4, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 

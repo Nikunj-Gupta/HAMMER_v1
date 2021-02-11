@@ -59,7 +59,7 @@ class ActorCritic(nn.Module):
         # We want separate optimizer for decoders.
         self.global_actor_decoder = [nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)]
 
-        self.dru = DRU(hard=True) 
+        # self.dru = DRU(hard=True) 
         
         # critic
         layers = [] 
@@ -76,7 +76,8 @@ class ActorCritic(nn.Module):
         message = []
         for decoder in self.global_actor_decoder: 
             # Obtaining message using decoder and then Passing message through DRU 
-            message.append(self.dru.forward(message=decoder(latent_vector), mode="R")) 
+            # message.append(self.dru.forward(message=decoder(latent_vector), mode="R")) 
+            message.append(decoder(latent_vector)) 
         return message
 
     def forward(self):
@@ -225,3 +226,4 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
+        self.policy_old.global_actor_decoder[0].load_state_dict(self.policy.global_actor_decoder[0].state_dict())
