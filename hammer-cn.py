@@ -250,7 +250,7 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
-    parser.add_argument("--hammer", type=int, default=0, help="1 for hammer; 0 for IL")
+    parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
@@ -265,7 +265,7 @@ if __name__ == '__main__':
 
 
     parser.add_argument("--meslen", type=int, default=4, help="message length")
-    parser.add_argument("--discretemes", type=int, default=1)
+    parser.add_argument("--discretemes", type=int, default=0)
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
