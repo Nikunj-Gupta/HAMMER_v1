@@ -203,7 +203,7 @@ if __name__ == '__main__':
     parser.add_argument("--load", type=bool, default=False, help="load true / false") 
 
     parser.add_argument("--expname", type=str, default=None)
-    parser.add_argument("--envname", type=str, default="sr")
+    parser.add_argument("--envname", type=str, default="cn")
     parser.add_argument("--nagents", type=int, default=3)
 
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
