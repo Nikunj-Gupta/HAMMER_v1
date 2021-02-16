@@ -15,6 +15,12 @@ import json
 
 from pathlib import Path
 
+def preprocess_one_obs(obs, which=1, limit=10): 
+    agent = "agent_" + str(which) 
+    obs[agent][limit:] = [0.]*(len(obs["agent_0"])-(limit)) 
+    return obs 
+
+
 def preprocess_obs(obs, limit): 
     for i in obs: 
         obs[i] = obs[i][:limit] 
@@ -33,7 +39,16 @@ def run(args):
     env.reset()
     agents = [agent for agent in env.agents] 
 
-    if args.partialobs:
+    if args.partialobs: 
+        print("Using Partial Observations") 
+    
+    if args.heterogeneity: 
+        print("Using Heterogeneous Local Agents") 
+
+    if args.heterogeneity: 
+        assert args.limit == 10 
+        obs_dim = len(preprocess_one_obs(env.reset(), limit=args.limit)["agent_0"]) 
+    elif args.partialobs:
         obs_dim = len(preprocess_obs(env.reset(), limit=args.limit)["agent_0"]) 
     else:
         obs_dim = env.observation_spaces[env.agents[0]].shape[0]
@@ -83,14 +98,22 @@ def run(args):
         K_epochs=config["global"]["K_epochs"],
         eps_clip=config["main"]["eps_clip"],        
         actor_layer=config["global"]["actor_layer"],
-        critic_layer=config["global"]["critic_layer"],
-    )
+        critic_layer=config["global"]["critic_layer"], 
+        dru_toggle=args.dru_toggle 
+    ) 
+
+    if args.dru_toggle: 
+        print("Using DRU") 
+    else: 
+        print("Not Using DRU")
 
     # logging variables
     ep_reward = 0
     global_timestep = 0
 
-    if args.partialobs: 
+    if args.heterogeneity: 
+        obs = preprocess_one_obs(env.reset(), limit=args.limit) 
+    elif args.partialobs: 
         obs = preprocess_obs(env.reset(), limit=args.limit)
     else:  
         obs = env.reset() 
@@ -115,13 +138,17 @@ def run(args):
 
         if args.partialobs: 
             next_obs = preprocess_obs(next_obs, limit=args.limit) 
+        elif args.heterogeneity: 
+            next_obs = preprocess_one_obs(next_obs, limit=args.limit) 
         obs = next_obs
 
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
             i_episode += 1
             writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards, i_episode)
-            if args.partialobs: 
+            if args.heterogeneity: 
+                obs = preprocess_one_obs(env.reset(), limit=args.limit) 
+            elif args.partialobs: 
                 obs = preprocess_obs(env.reset(), limit=args.limit)
             else: 
                 obs = env.reset() 
@@ -148,10 +175,14 @@ if __name__ == '__main__':
 
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--partialobs", type=int, default=0) 
+
+    parser.add_argument("--heterogeneity", type=int, default=1) 
     parser.add_argument("--limit", type=int, default=10) # 11 for sr, 10 for cn
     parser.add_argument("--maxcycles", type=int, default=25) 
 
-    parser.add_argument("--meslen", type=int, default=4, help="message length")
+    parser.add_argument("--dru_toggle", type=int, default=1) 
+
+    parser.add_argument("--meslen", type=int, default=1, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 
