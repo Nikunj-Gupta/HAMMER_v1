@@ -29,7 +29,7 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents):
+    def __init__(self, single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents, dru_toggle=0):
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
 
@@ -58,8 +58,9 @@ class ActorCritic(nn.Module):
         # not using nn.ModuleList to ensure that the global_actor_decoder parameters are not taken into the parameters.
         # We want separate optimizer for decoders.
         self.global_actor_decoder = [nn.Linear(actor_layer[-1], self.meslen) for _ in range(self.n_agents)]
-
-        # self.dru = DRU(hard=True) 
+        self.dru_toggle = dru_toggle 
+        if self.dru_toggle: 
+            self.dru = DRU(hard=True) 
         
         # critic
         layers = [] 
@@ -76,8 +77,10 @@ class ActorCritic(nn.Module):
         message = []
         for decoder in self.global_actor_decoder: 
             # Obtaining message using decoder and then Passing message through DRU 
-            # message.append(self.dru.forward(message=decoder(latent_vector), mode="R")) 
-            message.append(decoder(latent_vector)) 
+            if self.dru_toggle: 
+                message.append(self.dru.forward(message=decoder(latent_vector), mode="R")) 
+            else: 
+                message.append(decoder(latent_vector)) 
         return message
 
     def forward(self):
@@ -123,7 +126,7 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, agents, single_state_dim, single_action_dim, meslen, n_agents, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer):
+    def __init__(self, agents, single_state_dim, single_action_dim, meslen, n_agents, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer, dru_toggle=0):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
@@ -134,11 +137,11 @@ class PPO:
         self.global_memory = Memory()
         self.n_agents = n_agents
 
-        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents=self.agents).to(device)
+        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents=self.agents, dru_toggle=dru_toggle).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
         self.decoder_optimizer = [torch.optim.Adam(self.policy.global_actor_decoder[i].parameters(), lr=lr, betas=betas) for i in range(self.n_agents)]
 
-        self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen=meslen, agents=self.agents).to(device)
+        self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen=meslen, agents=self.agents, dru_toggle=dru_toggle).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()

@@ -5,6 +5,11 @@ save-dir/
 .venv/
 local-trials/
 configs/2021/npy/ 
-plots/ 
+plots/
 analysis_logs/
 analysis_logs2/
+models/ 
+configs/2021/newnpy/ 
+configs/2021/newnpy2/ 
+rs_npy/ 
+hammer_plots/ 
