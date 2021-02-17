@@ -158,7 +158,9 @@ class ActorCritic(nn.Module):
 
             action_logprobs = dist.log_prob(action)
             dist_entropy = dist.entropy()
-            state_value = self.critic(state.float())
+            
+            # Messages from global_actor should be detached!!
+            state_value = self.critic(state.float().detach())
             
         return action_logprobs, torch.squeeze(state_value), dist_entropy
 
@@ -247,8 +249,6 @@ class PPO:
 
                 # Finding Surrogate Loss:
                 advantages = rewards_list[i] - state_values.detach() 
-                if self.is_discrete:
-                    advantages = advantages.reshape(-1, 1)
                 surr1 = ratios * advantages
                 surr2 = torch.clamp(ratios, 1 - self.eps_clip, 1 + self.eps_clip) * advantages
                 critic_loss = 0.5 * self.MseLoss(state_values, rewards_list[i])
