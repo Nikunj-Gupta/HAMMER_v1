@@ -26,25 +26,34 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, action_std, hidden_nodes=64):
+    def __init__(self, state_dim, action_dim, action_std, actor_layer, critic_layer):
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
-        self.actor = nn.Sequential(
-            nn.Linear(state_dim, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, 32),
-            nn.Tanh(),
-            nn.Linear(32, action_dim),
-            nn.Tanh()
-        )
+        # actor
+        layers = [] 
+        layers.append(nn.Linear(state_dim, actor_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(actor_layer[1:])): 
+            layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(actor_layer[-1], action_dim)) 
+        layers.append(nn.Tanh())
+        
+        self.actor = nn.Sequential(*layers) 
+
         # critic
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, hidden_nodes),
-            nn.Tanh(),
-            nn.Linear(hidden_nodes, 32),
-            nn.Tanh(),
-            nn.Linear(32, 1)
-        )
+        # critic 
+        layers = [] 
+        layers.append(nn.Linear(state_dim, critic_layer[0])) 
+        layers.append(nn.Tanh()) 
+        for i in range(len(critic_layer[1:])): 
+            layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
+            layers.append(nn.Tanh()) 
+        layers.append(nn.Linear(critic_layer[-1], 1)) 
+        
+        self.critic = nn.Sequential(*layers) 
+
+
         self.action_var = torch.full((action_dim,), action_std * action_std).to(device)
 
     def forward(self):
@@ -76,17 +85,17 @@ class ActorCritic(nn.Module):
 
 
 class PPO:
-    def __init__(self, state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, hidden_nodes=64):
+    def __init__(self, state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = K_epochs
 
-        self.policy = ActorCritic(state_dim, action_dim, action_std, hidden_nodes).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, action_std, actor_layer, critic_layer).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
 
-        self.policy_old = ActorCritic(state_dim, action_dim, action_std, hidden_nodes).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, action_std, actor_layer, critic_layer).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
@@ -148,96 +157,3 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
-
-
-def main():
-    ############## Hyperparameters ##############
-    env_name = "BipedalWalker-v3"
-    exp_name = "ppo_continuous_check"
-    render = False
-    solved_reward = 300  # stop training if avg_reward > solved_reward
-    log_interval = 1  # print avg reward in the interval
-    max_episodes = 10000  # max training episodes
-    max_timesteps = 1500  # max timesteps in one episode
-
-    update_timestep = 4000  # update policy every n timesteps
-    action_std = 0.5  # constant std for action distribution (Multivariate Normal)
-    K_epochs = 80  # update policy for K epochs
-    eps_clip = 0.2  # clip parameter for PPO
-    gamma = 0.99  # discount factor
-
-    lr = 0.0003  # parameters for Adam optimizer
-    betas = (0.9, 0.999)
-
-    random_seed = None
-    #############################################
-
-    writer = SummaryWriter(logdir=os.path.join("logs/ppo/", exp_name))
-    # creating environment
-    env = gym.make(env_name)
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    if random_seed:
-        print("Random Seed: {}".format(random_seed))
-        torch.manual_seed(random_seed)
-        env.seed(random_seed)
-        np.random.seed(random_seed)
-
-    memory = [Memory()]
-    ppo = PPO(state_dim, action_dim, action_std, lr, betas, gamma, K_epochs, eps_clip)
-    print(lr, betas)
-
-    # logging variables
-    running_reward = 0
-    avg_length = 0
-    time_step = 0
-
-    # training loop
-    for i_episode in range(1, max_episodes + 1):
-        state = env.reset()
-        t = 0
-        for t in range(max_timesteps):
-            time_step += 1
-
-            memory[0].states.append(state)
-
-            # Running policy_old:
-            action, log_prob = ppo.select_action(state)
-            state, reward, done, _ = env.step(action)
-
-            # Saving reward and is_terminals:
-            memory[0].actions.append(action)
-            memory[0].logprobs.append(log_prob)
-            memory[0].rewards.append(reward)
-            memory[0].is_terminals.append(done)
-
-            # update if its time
-            if time_step % update_timestep == 0:
-                ppo.update(memory)
-                memory[0].clear_memory()
-                time_step = 0
-            running_reward += reward
-            if render:
-                env.render()
-            if done:
-                break
-
-        avg_length += t
-
-        # logging
-        if i_episode % log_interval == 0:
-            avg_length = int(avg_length / log_interval)
-            running_reward = int((running_reward / log_interval))
-
-            writer.add_scalar('Running Reward', running_reward, i_episode)
-            writer.add_scalar('Average Length', avg_length, i_episode)
-
-            print('Episode {} \t Avg length: {} \t Avg reward: {}'.format(i_episode, avg_length, running_reward))
-            running_reward = 0
-            avg_length = 0
-
-
-if __name__ == '__main__':
-    main()
-
