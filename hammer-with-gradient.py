@@ -88,7 +88,7 @@ def run(args):
 
     HAMMER = PPO(
         agents=agents,
-        single_state_dim=obs_dim, # all local observations concatenated + all agents' previous actions
+        single_state_dim=obs_dim, 
         single_action_dim=action_dim,
         meslen = args.meslen, 
         n_agents=len(agents), # required for discrete messages

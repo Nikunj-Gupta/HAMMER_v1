@@ -5,7 +5,8 @@ from tensorboardX import SummaryWriter
 
 from ppo_with_gradient import PPO
 
-from pettingzoo.sisl import multiwalker_v6
+from pettingzoo.mpe import simple_spread_v2
+from pettingzoo.mpe import simple_reference_v2
 from utils import read_config
 import os
 import numpy as np
@@ -13,16 +14,19 @@ import torch
 import json 
 
 from pathlib import Path
+from guessing_sum_game import GuessingSumEnv
 
 def run(args):
-    env = multiwalker_v6.parallel_env(n_walkers=args.nagents) 
+    
+    SCALE = 10.0
+    env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE)
+
     env.reset()
-    agents = [agent for agent in env.agents] 
-    obs_dim = env.observation_spaces[env.agents[0]].shape[0]        
-    action_dim = env.action_spaces[env.agents[0]].shape[0] 
+    agents = env.agents
 
-    agent_action_space = env.action_spaces[env.agents[0]]
-
+    obs_dim = 1
+        
+    action_dim = int(env.scale * env.num_agents)
 
     config = read_config(args.config) 
     if not config:
@@ -40,11 +44,21 @@ def run(args):
     expname = args.envname if args.expname == None else args.expname
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
+    log_dir = Path('./logs/GUESSER_GAME')
+    for i in count(0):
+        temp = log_dir/('run{}'.format(i)) 
+        if temp.exists():
+            pass
+        else:
+            writer = SummaryWriter(logdir=temp)
+            log_dir = temp
+            break
+
     betas = (0.9, 0.999)
 
     HAMMER = PPO(
         agents=agents,
-        single_state_dim=obs_dim, 
+        single_state_dim=obs_dim,
         single_action_dim=action_dim,
         meslen = args.meslen, 
         n_agents=len(agents), # required for discrete messages
@@ -55,8 +69,7 @@ def run(args):
         eps_clip=config["main"]["eps_clip"],        
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"], 
-        dru_toggle=args.dru_toggle, 
-        is_discrete=0 
+        dru_toggle=args.dru_toggle 
     ) 
 
     if args.dru_toggle: 
@@ -78,13 +91,10 @@ def run(args):
         action_array = [] 
         actions = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
         
-        # print(actions) 
-        actions = {agent : np.clip(actions[agent], agent_action_space.low, agent_action_space.high) for agent in agents} 
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
-
         HAMMER.memory_record(rewards, is_terminals)
-        episode_rewards += np.mean(np.array(list(rewards.values()))) 
+        episode_rewards += np.mean(list(rewards.values()))        
         # update if its time
         if timestep % config["global"]["update_timestep"] == 0: 
             HAMMER.update()
@@ -113,16 +123,18 @@ def run(args):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
+    parser.add_argument("--config", type=str, default='configs/2021/guesser/hyperparams.yaml', help="config file name")
 
     parser.add_argument("--expname", type=str, default=None)
-    parser.add_argument("--envname", type=str, default='mw')
-    parser.add_argument("--nagents", type=int, default=3)
+    parser.add_argument("--envname", type=str, default='cn')
+    parser.add_argument("--nagents", type=int, default=10)
 
-    parser.add_argument("--maxepisodes", type=int, default=50_000) 
+    parser.add_argument("--maxepisodes", type=int, default=500_000) 
+    parser.add_argument("--partialobs", type=int, default=0) 
 
     parser.add_argument("--dru_toggle", type=int, default=1) 
-    parser.add_argument("--meslen", type=int, default=1, help="message length")
+
+    parser.add_argument("--meslen", type=int, default=2, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 

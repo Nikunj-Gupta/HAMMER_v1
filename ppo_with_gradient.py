@@ -226,7 +226,7 @@ class PPO:
                 old_actions_list.append(torch.squeeze(torch.stack(self.memory[i].actions).to(device)).detach()) 
 
             old_logprobs_list.append(torch.squeeze(torch.tensor(self.memory[i].logprobs).to(device)).detach()) 
-            old_states_list.append(torch.squeeze(torch.stack(self.memory[i].states).to(device)).detach())
+            old_states_list.append(torch.stack(self.memory[i].states).to(device).detach())
         
         # Optimize policy for K epochs: 
 
@@ -275,4 +275,5 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
-        self.policy_old.global_actor_decoder[0].load_state_dict(self.policy.global_actor_decoder[0].state_dict())
+        for i in range(self.n_agents):
+            self.policy_old.global_actor_decoder[i].load_state_dict(self.policy.global_actor_decoder[i].state_dict())
