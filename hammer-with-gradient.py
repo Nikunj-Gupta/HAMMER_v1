@@ -99,7 +99,9 @@ def run(args):
         eps_clip=config["main"]["eps_clip"],        
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"], 
-        dru_toggle=args.dru_toggle 
+        dru_toggle=args.dru_toggle, 
+        is_discrete=1, 
+        sharedparams=0
     ) 
 
     if args.dru_toggle: 
@@ -124,7 +126,7 @@ def run(args):
     for timestep in count(1):
 
         action_array = [] 
-        actions = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
+        actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
         
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
@@ -171,18 +173,20 @@ if __name__ == '__main__':
 
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--envname", type=str, default='cn')
-    parser.add_argument("--nagents", type=int, default=3)
+    parser.add_argument("--nagents", type=int, default=3) 
+
+    parser.add_argument("--sharedparams", type=int, default=1) 
 
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
-    parser.add_argument("--partialobs", type=int, default=0) 
 
-    parser.add_argument("--heterogeneity", type=int, default=1) 
+    parser.add_argument("--partialobs", type=int, default=0) 
+    parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=10) # 11 for sr, 10 for cn
     parser.add_argument("--maxcycles", type=int, default=25) 
 
     parser.add_argument("--dru_toggle", type=int, default=1) 
 
-    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--meslen", type=int, default=100, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 

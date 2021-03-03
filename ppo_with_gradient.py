@@ -29,7 +29,8 @@ class Memory:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents, dru_toggle=0, is_discrete=1):
+    def __init__(self, single_state_dim, single_action_dim, n_agents, actor_layer, \
+        critic_layer, meslen, agents, dru_toggle=0, is_discrete=1, sharedparams=0): 
         super(ActorCritic, self).__init__()
         # action mean range -1 to 1
 
@@ -38,6 +39,11 @@ class ActorCritic(nn.Module):
         self.agents = agents 
         self.is_discrete = is_discrete 
         self.action_std = 0.5 
+        self.sharedparams=sharedparams 
+        self.num_local_networks = 1 
+        if not sharedparams: 
+            self.num_local_networks = self.n_agents
+
         layers = [] 
         layers.append(nn.Linear(single_state_dim + self.meslen, actor_layer[0])) 
         layers.append(nn.Tanh()) 
@@ -49,7 +55,7 @@ class ActorCritic(nn.Module):
             layers.append(nn.Softmax(dim=-1)) 
         else: 
             layers.append(nn.Tanh()) 
-        self.actor = nn.Sequential(*layers) 
+        self.actor = [nn.Sequential(*layers) for _ in range(self.num_local_networks)] 
         
         # global actor
         layers = [] 
@@ -75,7 +81,7 @@ class ActorCritic(nn.Module):
             layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
             layers.append(nn.Tanh()) 
         layers.append(nn.Linear(critic_layer[-1], 1)) 
-        self.critic = nn.Sequential(*layers) 
+        self.critic = [nn.Sequential(*layers) for _ in range(self.num_local_networks)] 
 
         self.action_var = torch.full((single_action_dim,), self.action_std * self.action_std).to(device)
 
@@ -108,7 +114,10 @@ class ActorCritic(nn.Module):
             for i, agent in enumerate(self.agents):
                 state = torch.FloatTensor(obs[agent])
                 local_state = torch.cat((state, global_actor_message[i].reshape(-1).detach()), 0).to(device)
-                action_probs = self.actor(local_state)
+                if self.sharedparams: 
+                    action_probs = self.actor[0](local_state)
+                else: 
+                    action_probs = self.actor[i](local_state)
                 dist = Categorical(action_probs)
                 action = dist.sample()
                 action_array.append(action.item())
@@ -118,13 +127,16 @@ class ActorCritic(nn.Module):
                 memory[i].actions.append(action)
                 memory[i].logprobs.append(dist.log_prob(action))
 
-            return {agent : action_array[i] for i, agent in enumerate(self.agents)} 
+            return {agent : action_array[i] for i, agent in enumerate(self.agents)}, [np.array(mes.detach()[0]) for mes in global_actor_message] 
         else: 
             action_array = []
             for i, agent in enumerate(self.agents):
                 state = torch.FloatTensor(obs[agent])
                 local_state = torch.cat((state, global_actor_message[i].reshape(-1).detach()), 0).to(device)
-                action_mean = self.actor(local_state) 
+                if self.sharedparams: 
+                    action_mean = self.actor[0](local_state) 
+                else:
+                    action_mean = self.actor[i](local_state) 
                 cov_mat = torch.diag(self.action_var).to(device) 
                 dist = MultivariateNormal(action_mean, cov_mat)
                 action = dist.sample()
@@ -136,21 +148,30 @@ class ActorCritic(nn.Module):
                 memory[i].actions.append(action)
                 memory[i].logprobs.append(action_logprob) 
 
-            return {agent : action_array[i] for i, agent in enumerate(self.agents)} 
+            return {agent : action_array[i] for i, agent in enumerate(self.agents)}, [np.array(mes.detach()[0]) for mes in global_actor_message]  
 
-    def evaluate(self, state, action): 
+    def evaluate(self, state, action, i): 
         if self.is_discrete: 
-            action_probs = self.actor(state)
+            if self.sharedparams: 
+                action_probs = self.actor[0](state)
+            else: 
+                action_probs = self.actor[i](state)
             dist = Categorical(action_probs)
 
             action_logprobs = dist.log_prob(action)
             dist_entropy = dist.entropy() 
 
             # Messages from global_actor should be detached!!
-            state_value = self.critic(state.detach())
+            if self.sharedparams: 
+                state_value = self.critic[0](state.detach()) 
+            else: 
+                state_value = self.critic[i](state.detach()) 
 
         else: 
-            action_mean = self.actor(state.float())
+            if self.sharedparams:
+                action_mean = self.actor[0](state.float())
+            else: 
+                action_mean = self.actor[i](state.float())
             action_var = self.action_var.expand_as(action_mean)
             cov_mat = torch.diag_embed(action_var).to(device)
 
@@ -160,13 +181,17 @@ class ActorCritic(nn.Module):
             dist_entropy = dist.entropy()
             
             # Messages from global_actor should be detached!!
-            state_value = self.critic(state.float().detach())
+            if self.sharedparams: 
+                state_value = self.critic[0](state.float().detach()) 
+            else: 
+                state_value = self.critic[i](state.float().detach()) 
             
         return action_logprobs, torch.squeeze(state_value), dist_entropy
 
 
 class PPO:
-    def __init__(self, agents, single_state_dim, single_action_dim, meslen, n_agents, lr, betas, gamma, K_epochs, eps_clip, actor_layer, critic_layer, dru_toggle=0, is_discrete=1):
+    def __init__(self, agents, single_state_dim, single_action_dim, meslen, n_agents, lr, betas, gamma, K_epochs, eps_clip, \
+        actor_layer, critic_layer, dru_toggle=0, is_discrete=1, sharedparams=0):
         self.lr = lr
         self.betas = betas
         self.gamma = gamma
@@ -176,12 +201,22 @@ class PPO:
         self.memory = [Memory() for _ in self.agents]
         self.global_memory = Memory()
         self.n_agents = n_agents
+        self.num_local_networks = 1 
+        self.sharedparams = sharedparams 
+        if not self.sharedparams: 
+            self.num_local_networks = self.n_agents
 
-        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen, agents=self.agents, dru_toggle=dru_toggle, is_discrete=is_discrete).to(device)
+        self.policy = ActorCritic(single_state_dim, single_action_dim, n_agents, \
+            actor_layer, critic_layer, meslen, agents=self.agents, dru_toggle=dru_toggle, \
+                is_discrete=is_discrete, sharedparams=sharedparams).to(device)
         self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr, betas=betas)
+        self.actor_optimizers = [torch.optim.Adam(self.policy.actor[i].parameters(), lr=lr, betas=betas) for i in range(self.num_local_networks)]
+        self.critic_optimizers = [torch.optim.Adam(self.policy.critic[i].parameters(), lr=lr, betas=betas) for i in range(self.num_local_networks)]
         self.decoder_optimizer = [torch.optim.Adam(self.policy.global_actor_decoder[i].parameters(), lr=lr, betas=betas) for i in range(self.n_agents)]
 
-        self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, actor_layer, critic_layer, meslen=meslen, agents=self.agents, dru_toggle=dru_toggle, is_discrete=is_discrete).to(device)
+        self.policy_old = ActorCritic(single_state_dim, single_action_dim, n_agents, \
+            actor_layer, critic_layer, meslen=meslen, agents=self.agents, dru_toggle=dru_toggle, \
+                is_discrete=is_discrete, sharedparams=sharedparams).to(device) 
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
@@ -242,7 +277,7 @@ class PPO:
                 # state: 800x18 Message: 800x4   new:800x22 ; so we use dimension 1
                 old_state = torch.cat((old_states_list[i], message[i]), 1)
                 # Evaluating old actions and values :
-                logprobs, state_values, dist_entropy = self.policy.evaluate(old_state, old_actions_list[i])
+                logprobs, state_values, dist_entropy = self.policy.evaluate(old_state, old_actions_list[i], i)
 
                 # Finding the ratio (pi_theta / pi_theta__old): 
                 ratios = torch.exp(logprobs - old_logprobs_list[i].detach())
@@ -257,12 +292,24 @@ class PPO:
 
                 # take gradient step
                 self.optimizer.zero_grad()
-                self.decoder_optimizer[i].zero_grad()
+                self.decoder_optimizer[i].zero_grad() 
+                if self.sharedparams: 
+                    self.actor_optimizers[0].zero_grad() 
+                    self.critic_optimizers[0].zero_grad() 
+                else: 
+                    self.actor_optimizers[i].zero_grad() 
+                    self.critic_optimizers[i].zero_grad() 
                 loss.mean().backward()
                 # for j in range(self.n_agents):
                 #     print(j, self.policy.global_actor_decoder[j].weight[:10, 0])
                 self.optimizer.step()
-                self.decoder_optimizer[i].step()
+                self.decoder_optimizer[i].step() 
+                if self.sharedparams: 
+                    self.actor_optimizers[0].step() 
+                    self.critic_optimizers[0].step() 
+                else: 
+                    self.actor_optimizers[i].step() 
+                    self.critic_optimizers[i].step() 
                 # print("STEP")
                 # for j in range(self.n_agents):
                 #     print(j, self.policy.global_actor_decoder[j].weight[:10, 0])
@@ -275,5 +322,8 @@ class PPO:
 
         # Copy new weights into old policy:
         self.policy_old.load_state_dict(self.policy.state_dict())
-        for i in range(self.n_agents):
-            self.policy_old.global_actor_decoder[i].load_state_dict(self.policy.global_actor_decoder[i].state_dict())
+        for i in range(self.n_agents): 
+            self.policy_old.global_actor_decoder[i].load_state_dict(self.policy.global_actor_decoder[i].state_dict()) 
+        for i in range(self.num_local_networks): 
+            self.policy_old.actor[i].load_state_dict(self.policy.actor[i].state_dict())
+            self.policy_old.critic[i].load_state_dict(self.policy.critic[i].state_dict())

@@ -2,21 +2,29 @@ import numpy as np
 
 
 class GuessingSumEnv:
-    def __init__(self, num_agents=5, discrete = True, scale=10.0):
+    def __init__(self, num_agents=5, discrete = False, scale=10.0):
         self.num_agents = num_agents
         self.discrete = discrete
-        self.sum = 0
+        self.observations = []
         self.scale = scale
         self.sum_scale = self.num_agents * self.scale
         self.agents = ["Agent{}".format(i) for i in range(self.num_agents)] 
 
     def step(self, actions):
-        actions = np.array(list(actions.values())).reshape(-1, 1)
-        if actions.shape != (self.num_agents, 1):
-            raise Exception('got input shape ', actions.shape, ' instead of ', (self.num_agents, 1))
+        actions = list(actions.values())
+        rewards = []
+        for action in actions:
+            rewards.append(np.sum(-np.abs(action - self.observations))) # [-Inf ; 0]
+
+
+
+
+        # actions = np.array(list(actions.values())).reshape(-1, 1)
+        # if actions.shape != (self.num_agents, 1):
+        #     raise Exception('got input shape ', actions.shape, ' instead of ', (self.num_agents, 1))
 
         observations = None
-        rewards = -np.abs(actions - self.sum) # [-Inf ; 0]
+        # rewards = -np.abs(actions - self.sum) # [-Inf ; 0]
 
         # normalized_rewards = (np.maximum(rewards, -self.sum_scale) + self.sum_scale) / self.sum_scale # [0 ; 1]
         normalized_rewards = rewards
@@ -26,7 +34,7 @@ class GuessingSumEnv:
 
         rewards = {}
         for i, agent in enumerate(self.agents):
-            rewards[agent] = normalized_rewards[i][0]
+            rewards[agent] = normalized_rewards[i]
             done[agent] = True
 
         return observations, rewards, done, info
@@ -36,7 +44,7 @@ class GuessingSumEnv:
             observations = np.random.randint(low=0, high= self.scale, size=(self.num_agents, 1))
         else: 
             observations = np.clip(np.random.normal(size=(self.num_agents, 1)), -self.scale, self.scale)
-        self.sum = np.sum(observations)
+        self.observations = observations.reshape(-1)
         obs = {}
         for i, agent in enumerate(self.agents):
             obs[agent] = np.array(observations[i])

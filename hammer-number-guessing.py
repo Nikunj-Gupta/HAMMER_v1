@@ -19,14 +19,14 @@ from guessing_sum_game import GuessingSumEnv
 def run(args):
     
     SCALE = 10.0
-    env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE)
+    env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE, discrete=False)
 
     env.reset()
     agents = env.agents
 
     obs_dim = 1
         
-    action_dim = int(env.scale * env.num_agents)
+    action_dim = args.nagents
 
     config = read_config(args.config) 
     if not config:
@@ -69,7 +69,9 @@ def run(args):
         eps_clip=config["main"]["eps_clip"],        
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"], 
-        dru_toggle=args.dru_toggle 
+        dru_toggle=args.dru_toggle,
+        sharedparams=1,
+        is_discrete=0
     ) 
 
     if args.dru_toggle: 
@@ -89,7 +91,7 @@ def run(args):
     for timestep in count(1):
 
         action_array = [] 
-        actions = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
+        actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
         
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
@@ -127,14 +129,14 @@ if __name__ == '__main__':
 
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--envname", type=str, default='cn')
-    parser.add_argument("--nagents", type=int, default=10)
+    parser.add_argument("--nagents", type=int, default=2)
 
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--partialobs", type=int, default=0) 
 
     parser.add_argument("--dru_toggle", type=int, default=1) 
 
-    parser.add_argument("--meslen", type=int, default=2, help="message length")
+    parser.add_argument("--meslen", type=int, default=0, help="message length")
     parser.add_argument("--randomseed", type=int, default=10)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 
