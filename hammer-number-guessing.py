@@ -18,7 +18,7 @@ from guessing_sum_game import GuessingSumEnv
 
 def run(args):
     
-    SCALE = 10.0
+    SCALE = args.scale 
     env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE, discrete=False)
 
     env.reset()
@@ -26,7 +26,7 @@ def run(args):
 
     obs_dim = 1
         
-    action_dim = args.nagents
+    action_dim = 1 
 
     config = read_config(args.config) 
     if not config:
@@ -41,18 +41,27 @@ def run(args):
         np.random.seed(random_seed)
 
 
-    expname = args.envname if args.expname == None else args.expname
+    expname = "--".join([
+        args.envname, 
+        "nagents"+str(args.nagents), 
+        # "scale"+str(args.scale), 
+        "dru"+str(args.dru_toggle), 
+        # "sharedparams"+str(args.sharedparams), 
+        "meslen"+str(args.meslen), 
+        "rs", str(args.randomseed) 
+ 
+    ])
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
-    log_dir = Path('./logs/GUESSER_GAME')
-    for i in count(0):
-        temp = log_dir/('run{}'.format(i)) 
-        if temp.exists():
-            pass
-        else:
-            writer = SummaryWriter(logdir=temp)
-            log_dir = temp
-            break
+    # log_dir = Path('./logs/GUESSER_GAME')
+    # for i in count(0):
+    #     temp = log_dir/('run{}'.format(i)) 
+    #     if temp.exists():
+    #         pass
+    #     else:
+    #         writer = SummaryWriter(logdir=temp)
+    #         log_dir = temp
+    #         break
 
     betas = (0.9, 0.999)
 
@@ -70,7 +79,7 @@ def run(args):
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"], 
         dru_toggle=args.dru_toggle,
-        sharedparams=1,
+        sharedparams=args.sharedparams,
         is_discrete=0
     ) 
 
@@ -91,11 +100,10 @@ def run(args):
     for timestep in count(1):
 
         action_array = [] 
-        actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory)
-        
+        actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory) 
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
-        HAMMER.memory_record(rewards, is_terminals)
+        HAMMER.memory_record(rewards, is_terminals) 
         episode_rewards += np.mean(list(rewards.values()))        
         # update if its time
         if timestep % config["global"]["update_timestep"] == 0: 
@@ -128,20 +136,21 @@ if __name__ == '__main__':
     parser.add_argument("--config", type=str, default='configs/2021/guesser/hyperparams.yaml', help="config file name")
 
     parser.add_argument("--expname", type=str, default=None)
-    parser.add_argument("--envname", type=str, default='cn')
+    parser.add_argument("--envname", type=str, default='guesser')
     parser.add_argument("--nagents", type=int, default=2)
+    parser.add_argument("--scale", type=float, default=1.0) 
 
-    parser.add_argument("--maxepisodes", type=int, default=500_000) 
-    parser.add_argument("--partialobs", type=int, default=0) 
+    parser.add_argument("--maxepisodes", type=int, default=50_000) 
 
     parser.add_argument("--dru_toggle", type=int, default=1) 
+    parser.add_argument("--sharedparams", type=int, default=0) 
 
     parser.add_argument("--meslen", type=int, default=0, help="message length")
-    parser.add_argument("--randomseed", type=int, default=10)
+    parser.add_argument("--randomseed", type=int, default=999)
 
-    parser.add_argument("--saveinterval", type=int, default=50_000) 
-    parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
-    parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
+    parser.add_argument("--saveinterval", type=int, default=10000) 
+    parser.add_argument("--logdir", type=str, default="sumguesser-logs/", help="log directory path")
+    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir/", help="save directory path")
     
 
     args = parser.parse_args() 
