@@ -142,6 +142,15 @@ def run(args):
         is_discrete=0
     ) 
     HAMMER.load(args.load)
+    log_dir = Path('./logs/GUESSER_GAME_tester')
+    for i in count(0):
+        temp = log_dir/('run{}'.format(i)) 
+        if temp.exists():
+            pass
+        else:
+            writer = SummaryWriter(logdir=temp)
+            log_dir = temp
+            break
     
     if args.dru_toggle: 
         print("Using DRU") 
@@ -162,7 +171,7 @@ def run(args):
     action_set = [] 
     message_set = [] 
     diff_set = [] 
-    for obs in obs_set: 
+    for i_episode, obs in enumerate(obs_set): 
         # print(obs) 
         action_array = [] 
         actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory) 
@@ -173,7 +182,7 @@ def run(args):
         # for i in messages: 
         #     m_sums.append(sum(i))
         # print(messages) 
-        # print(rewards) 
+        writer.add_scalar('Avg reward for each agent, after an episode', np.mean(list(rewards.values())), i_episode)
         # print() 
         message_set.append(messages) 
     plot(obs=obs_set, actions=action_set, messages=message_set) 
