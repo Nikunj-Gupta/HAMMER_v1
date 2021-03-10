@@ -12,9 +12,9 @@ class GuessingSumEnv:
 
     def step(self, actions):
         actions = list(actions.values()) 
-        # rewards = []
-        # for action in actions:
-        #     rewards.append(np.sum(-np.abs(action - self.observations))) # [-Inf ; 0]
+        rewards = []
+        for action in actions:
+            rewards.append(np.sum(-np.abs(action - self.observations))) # [-Inf ; 0]
 
 
 
@@ -24,7 +24,7 @@ class GuessingSumEnv:
         #     raise Exception('got input shape ', actions.shape, ' instead of ', (self.num_agents, 1))
 
         observations = None
-        rewards = -np.abs(actions - self.sum) # [-Inf ; 0]
+        # rewards = -np.abs(actions - self.sum) # [-Inf ; 0]
 
         # normalized_rewards = (np.maximum(rewards, -self.sum_scale) + self.sum_scale) / self.sum_scale # [0 ; 1]
         normalized_rewards = rewards
