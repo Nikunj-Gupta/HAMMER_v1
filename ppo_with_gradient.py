@@ -250,15 +250,16 @@ class PPO:
 
             # Normalizing the rewards:
             rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
-            rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5)
-
+            rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-5) 
+            rewards = rewards.reshape(-1) 
             # making lists to update
             rewards_list.append(rewards)
             if self.is_discrete: 
                 old_actions_list.append(torch.squeeze(torch.tensor(self.memory[i].actions).to(device)).detach()) 
 
             else: 
-                old_actions_list.append(torch.squeeze(torch.stack(self.memory[i].actions).to(device)).detach()) 
+                old_actions_list.append(torch.stack(self.memory[i].actions).reshape(-1, self.single_action_dim).to(device).detach()) 
+                # old_actions_list.append(torch.squeeze(torch.stack(self.memory[i].actions).to(device)).detach()) 
 
             old_logprobs_list.append(torch.squeeze(torch.tensor(self.memory[i].logprobs).to(device)).detach()) 
             old_states_list.append(torch.stack(self.memory[i].states).to(device).detach())
