@@ -224,8 +224,24 @@ class PPO:
         self.meslen = meslen 
         self.is_discrete = is_discrete  
 
-    def load(self, filename):
-        self.policy.load_state_dict(torch.load(filename))
+    def load(self, dir):
+        self.policy.load_state_dict(torch.load(os.path.join(dir, 'global_encoder.pth')))
+        for i in range(self.n_agents): 
+            self.policy_old.global_actor_decoder[i].load_state_dict(torch.load(os.path.join(dir, 'gad{}.pth'.format(i))))
+
+        for i in range(self.num_local_networks): 
+            self.policy_old.actor[i].load_state_dict(torch.load(os.path.join(dir, 'local_agent_actor{}.pth'.format(i))))
+            self.policy_old.critic[i].load_state_dict(torch.load(os.path.join(dir, 'local_agent_critic{}.pth'.format(i))))
+    
+    def save(self, dir):
+        torch.save(self.policy_old.state_dict(), os.path.join(dir, 'global_encoder.pth'))
+        for i in range(self.n_agents): 
+            torch.save(self.policy_old.global_actor_decoder[i].state_dict(), os.path.join(dir, 'gad{}.pth'.format(i)))
+
+        for i in range(self.num_local_networks): 
+            torch.save(self.policy_old.actor[i].state_dict(), os.path.join(dir, 'local_agent_actor{}.pth'.format(i)))
+            torch.save(self.policy_old.critic[i].state_dict(), os.path.join(dir, 'local_agent_critic{}.pth'.format(i)))
+        
 
     def memory_record(self, rewards, is_terminals):
         for i, agent in enumerate(self.agents):

@@ -13,3 +13,5 @@ configs/2021/newnpy/
 configs/2021/newnpy2/ 
 rs_npy/ 
 hammer_plots/ 
+sumguesser-logs
+sumguesser-save-dir

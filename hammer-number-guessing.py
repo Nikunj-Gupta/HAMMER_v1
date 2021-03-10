@@ -125,8 +125,7 @@ def run(args):
         if i_episode % args.saveinterval == 0:
             if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
                 os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
-            torch.save(HAMMER.policy.state_dict(),
-                    os.path.join(args.savedir, str(i_episode)+"_"+expname, "local_agent.pth"))        
+            HAMMER.save(os.path.join(args.savedir, str(i_episode)+"_"+expname))     
         if i_episode == args.maxepisodes:
             break
 
@@ -142,13 +141,13 @@ if __name__ == '__main__':
 
     parser.add_argument("--maxepisodes", type=int, default=50_000) 
 
-    parser.add_argument("--dru_toggle", type=int, default=1) 
+    parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
 
-    parser.add_argument("--meslen", type=int, default=0, help="message length")
+    parser.add_argument("--meslen", type=int, default=1, help="message length")
     parser.add_argument("--randomseed", type=int, default=999)
 
-    parser.add_argument("--saveinterval", type=int, default=10000) 
+    parser.add_argument("--saveinterval", type=int, default=1) 
     parser.add_argument("--logdir", type=str, default="sumguesser-logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="sumguesser-save-dir/", help="save directory path")
     

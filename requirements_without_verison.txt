@@ -13,3 +13,5 @@ six
 tensorboardX
 torch
 typing-extensions
+pandas
+matplotlib

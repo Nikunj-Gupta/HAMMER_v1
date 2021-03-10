@@ -34,10 +34,10 @@ def plot(obs, actions, messages):
     # print(df["action1_err"].mean(), df["action1_err"].std()) # 0.7698002555758323, 0.5571670516844823 in 10000 eps 
     # print(df["action2_err"].mean(), df["action2_err"].std()) # 0.7838607136086739, 0.5664230119884279 in 10000 eps 
     
-    # # Message trend for both obs1 and obs2 
-    # df.plot.scatter(x="obs1", y="obs2", c="message", colormap="viridis") 
-    # plt.gca().invert_yaxis() 
-    # plt.savefig('sumgame_analysis/obs_vs_obs_vs_message.png') 
+    # Message trend for both obs1 and obs2 
+    df.plot.scatter(x="obs1", y="obs2", c="message", colormap="viridis") 
+    plt.gca().invert_yaxis() 
+    plt.savefig('obs_vs_obs_vs_message.png') 
     
     # # Message trend for obs1 
     # df.plot.scatter(x="index", y="obs1", c="message", colormap="viridis") 
@@ -141,8 +141,7 @@ def run(args):
         sharedparams=1,
         is_discrete=0
     ) 
-
-    HAMMER.policy_old.load_state_dict(torch.load(str(os.path.join(args.load, "local_agent.pth")))) 
+    HAMMER.load(args.load)
     
     if args.dru_toggle: 
         print("Using DRU") 
@@ -155,10 +154,10 @@ def run(args):
 
     env.reset() 
     # For continuous observations 
-    obs_set = [env.reset() for _ in range(1)] 
+    obs_set = [env.reset() for _ in range(10000)] 
 
-    # For discrete observations 
-    obs_set = [{"Agent0":np.array([i]), "Agent1":np.array([i])} for i in range(10)] 
+    # # For discrete observations 
+    # obs_set = [{"Agent0":np.array([i]), "Agent1":np.array([i])} for i in range(10)] 
 
     action_set = [] 
     message_set = [] 
@@ -177,9 +176,9 @@ def run(args):
         # print(rewards) 
         # print() 
         message_set.append(messages) 
-    # plot(obs=obs_set, actions=action_set, messages=message_set) 
+    plot(obs=obs_set, actions=action_set, messages=message_set) 
     
-    plot_discrete(obs=obs_set, actions=action_set, messages=message_set) 
+    # plot_discrete(obs=obs_set, actions=action_set, messages=message_set) 
     
     # print(np.mean(diff_set, axis=0)) 
 
@@ -187,13 +186,13 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default='configs/2021/guesser/hyperparams.yaml', help="config file name")
-    parser.add_argument("--load", type=str, default="guesser-save-dir-new/50000_guesser--nagents2--dru0--meslen4--rs--999") 
+    parser.add_argument("--load", type=str, default="sumguesser-save-dir/1_guesser--nagents2--dru0--meslen1--rs--999") 
 
     parser.add_argument("--nagents", type=int, default=2)
     parser.add_argument("--maxepisodes", type=int, default=1) 
     parser.add_argument("--dru_toggle", type=int, default=0) 
-    parser.add_argument("--meslen", type=int, default=20, help="message length")
-    parser.add_argument("--randomseed", type=int, default=999)
+    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--randomseed", type=int, default=99)
 
     args = parser.parse_args() 
     run(args=args)
