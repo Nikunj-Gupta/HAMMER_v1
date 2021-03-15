@@ -17,57 +17,103 @@ from pathlib import Path
 
 from guessing_sum_game import GuessingSumEnv
 
-def plot(obs, actions, messages): 
-    columns = ["index", "obs1", "obs2", "action1", "action2", "message"]
+def plot(obs, actions, messages, discrete_mes=False): 
+    columns = ["index", "obs1", "obs2", "action1", "action2", "message1", "message2"]
     df = pd.DataFrame(columns=columns) 
-    
+
     for i in range(len(obs)): 
         point = [0, obs[i]["Agent0"][0], obs[i]["Agent1"][0], actions[i]["Agent0"][0], actions[i]["Agent1"][0]] 
         point.extend(messages[i][0]) 
+        point.extend(messages[i][1]) 
         df = df.append(pd.DataFrame([point], columns=columns)) 
+    
     df["obs_sum"] = df["obs1"] + df["obs2"] 
     df["action1_err"] = abs(df["action1"] - df["obs_sum"]) 
     df["action2_err"] = abs(df["action2"] - df["obs_sum"]) 
+
     # print(df) 
     
     # Mean and Standard Deviation 
-    # print(df["action1_err"].mean(), df["action1_err"].std()) # 0.7698002555758323, 0.5571670516844823 in 10000 eps 
-    # print(df["action2_err"].mean(), df["action2_err"].std()) # 0.7838607136086739, 0.5664230119884279 in 10000 eps 
+    print(df["action1_err"].mean(), df["action1_err"].std()) # 0.7698002555758323, 0.5571670516844823 in 10000 eps 
+    print(df["action2_err"].mean(), df["action2_err"].std()) # 0.7838607136086739, 0.5664230119884279 in 10000 eps 
     
     # Message trend for both obs1 and obs2 
-    df.plot.scatter(x="obs1", y="obs2", c="message", colormap="viridis") 
-    plt.gca().invert_yaxis() 
-    plt.savefig('obs_vs_obs_vs_message.png') 
-    
-    # # Message trend for obs1 
-    # df.plot.scatter(x="index", y="obs1", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/obs1_vs_message.png') 
-    
-    # # Message trend for obs2 
-    # df.plot.scatter(x="index", y="obs2", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/obs2_vs_message.png') 
+    d = "sumgame_analysis/somemore_discrete/" 
     
     
+    if discrete_mes: 
+        for m in ["message1", "message2"]: 
+            df.loc[df[m] < 0.5, m] = 0 
+            df.loc[df[m] >= 0.5, m] = 1 
     
-    # # Message trend for obs_sum 
-    # df.plot.scatter(x="index", y="obs_sum", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/obssum_vs_message.png') 
+    # df.plot.scatter(x="message1", y="message2", c="obs_sum", colormap="viridis") 
+    # plt.savefig(d+'1.png') 
+    
+    # df.plot.scatter(x="message1", y="message2", c="action1", colormap="viridis") 
+    # plt.savefig(d+'4.png') 
+
+    # df.plot.scatter(x="message1", y="message2", c="action2", colormap="viridis") 
+    # plt.savefig(d+'5.png') 
+
+    # df.plot.scatter(x="obs1", y="message2", c="action1", colormap="viridis") 
+    # plt.savefig(d+'2.png') 
+
+    # df.plot.scatter(x="obs2", y="message1", c="action2", colormap="viridis") 
+    # plt.savefig(d+'3.png') 
+
+    # df.plot.scatter(x="obs2", y="message1", c="obs_sum", colormap="viridis") 
+    # plt.savefig(d+'6.png') 
+
+    # df.plot.scatter(x="obs1", y="message2", c="obs_sum", colormap="viridis") 
+    # plt.savefig(d+'7.png') 
+
+    # df.plot.scatter(x="obs1", y="obs2", c="obs_sum", colormap="viridis") 
+    # plt.savefig(d+'8.png') 
+
+    # df.plot.scatter(x="obs1", y="obs2", c="action1", colormap="viridis") 
+    # plt.savefig(d+'9.png') 
+
+    # df.plot.scatter(x="obs1", y="obs2", c="action2", colormap="viridis") 
+    # plt.savefig(d+'10.png') 
+
+    # plt.gca().invert_yaxis() 
+    # for m in ["message1", "message2"]: 
+    
+        # df.plot.scatter(x="obs1", y="obs2", c=m, colormap="viridis") 
+        
+    #     # plt.gca().invert_yaxis() 
+        # plt.savefig(d+'obs_vs_obs_vs_'+m+'-initial.png') 
+        
+    #     # Message trend for obs1 
+    #     df.plot.scatter(x="index", y="obs1", c=m, colormap="viridis") 
+    #     plt.savefig(d+'obs1_vs_'+m+'.png') 
+        
+    #     # Message trend for obs2 
+    #     df.plot.scatter(x="index", y="obs2", c=m, colormap="viridis") 
+    #     plt.savefig(d+'obs2_vs_'+m+'.png') 
+        
+        
+        
+    #     # Message trend for obs_sum 
+    #     df.plot.scatter(x="index", y="obs_sum", c=m, colormap="viridis") 
+    #     plt.savefig(d+'obssum_vs_'+m+'.png') 
 
 
 
-    # # Message trend for both action1 and action2 
-    # df.plot.scatter(x="action1", y="action2", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/action_vs_action_vs_message.png') 
+    #     # Message trend for both action1 and action2 
+    #     df.plot.scatter(x="action1", y="action2", c=m, colormap="viridis") 
+    #     plt.savefig(d+'action_vs_action_vs_'+m+'.png') 
 
-    # # Message trend for action1 
-    # df.plot.scatter(x="index", y="action1", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/action1_vs_message.png') 
-    
-    # # Message trend for action2 
-    # df.plot.scatter(x="index", y="action2", c="message", colormap="viridis") 
-    # plt.savefig('sumgame_analysis/action2_vs_message.png') 
-    
-    # print(entropy(pk=df["message"])) 
+    #     # Message trend for action1 
+    #     df.plot.scatter(x="index", y="action1", c=m, colormap="viridis") 
+    #     plt.savefig(d+'action1_vs_'+m+'.png') 
+        
+    #     # Message trend for action2 
+    #     df.plot.scatter(x="index", y="action2", c=m, colormap="viridis") 
+    #     plt.savefig(d+'action2_vs_'+m+'.png') 
+        
+        # print(entropy(pk=df["message1"])) 
+
 
     # plt.show() 
 
@@ -101,7 +147,7 @@ def plot_discrete(obs, actions, messages):
 def run(args):
     
     SCALE = 1.0
-    env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE, discrete=False)
+    env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE, discrete=0)
 
     env.reset()
     agents = env.agents
@@ -138,11 +184,11 @@ def run(args):
         actor_layer=config["global"]["actor_layer"],
         critic_layer=config["global"]["critic_layer"], 
         dru_toggle=args.dru_toggle,
-        sharedparams=1,
+        sharedparams=0,
         is_discrete=0
     ) 
     HAMMER.load(args.load)
-    log_dir = Path('./logs/GUESSER_GAME_tester')
+    log_dir = Path('./sumguesser-logs-new/')
     for i in count(0):
         temp = log_dir/('run{}'.format(i)) 
         if temp.exists():
@@ -162,43 +208,58 @@ def run(args):
     global_timestep = 0
 
     env.reset() 
-    # For continuous observations 
-    obs_set = [env.reset() for _ in range(10000)] 
 
-    # # For discrete observations 
-    # obs_set = [{"Agent0":np.array([i]), "Agent1":np.array([i])} for i in range(10)] 
-
+    obs_set = [] 
     action_set = [] 
     message_set = [] 
     diff_set = [] 
-    for i_episode, obs in enumerate(obs_set): 
-        # print(obs) 
+    ep_rew = [] 
+    obs = env.reset() 
+
+    i_episode = -1
+    episode_rewards = 0
+    for timestep in count(1):
+
         action_array = [] 
+
         actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory) 
-        # print(actions) 
+        messages[0]=np.array([0])
+        messages[1]=np.array([0])
+        obs_set.append(obs)
         action_set.append(actions) 
-        next_obs, rewards, is_terminals, infos = env.step(actions) 
-        # m_sums = [] 
-        # for i in messages: 
-        #     m_sums.append(sum(i))
-        # print(messages) 
-        writer.add_scalar('Avg reward for each agent, after an episode', np.mean(list(rewards.values())), i_episode)
-        # print() 
         message_set.append(messages) 
-    plot(obs=obs_set, actions=action_set, messages=message_set) 
-    
-    # plot_discrete(obs=obs_set, actions=action_set, messages=message_set) 
-    
-    # print(np.mean(diff_set, axis=0)) 
+        next_obs, rewards, is_terminals, infos = env.step(actions) 
+
+        HAMMER.memory_record(rewards, is_terminals) 
+        episode_rewards += np.mean(list(rewards.values())) 
+        ep_rew.append(episode_rewards) 
+
+        obs = next_obs
+
+        # If episode had ended
+        if all([is_terminals[agent] for agent in agents]):
+            i_episode += 1
+            writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards, i_episode)
+            obs = env.reset() 
+            print('Episode {} \t  Avg reward for each agent, after an episode: {}'.format(i_episode, episode_rewards))
+            episode_rewards = 0
+
+        if i_episode == args.maxepisodes:
+            break 
+
+
+    print(np.mean(ep_rew)) 
+
+    plot(obs=obs_set, actions=action_set, messages=message_set, discrete_mes=args.dru_toggle) 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default='configs/2021/guesser/hyperparams.yaml', help="config file name")
-    parser.add_argument("--load", type=str, default="sumguesser-save-dir/1_guesser--nagents2--dru0--meslen1--rs--999") 
+    parser.add_argument("--load", type=str, default="sumguesser-save-dir-new/50000_guesser--nagents2--dru0--meslen1--rs--999") 
 
     parser.add_argument("--nagents", type=int, default=2)
-    parser.add_argument("--maxepisodes", type=int, default=1) 
+    parser.add_argument("--maxepisodes", type=int, default=10000) 
     parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--meslen", type=int, default=1, help="message length")
     parser.add_argument("--randomseed", type=int, default=99)

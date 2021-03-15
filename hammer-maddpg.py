@@ -27,7 +27,7 @@ def run(config):
     run_dir = model_dir / curr_run
     log_dir = run_dir / 'logs'
     os.makedirs(log_dir)
-    logger = SummaryWriter(str(log_dir))
+    logger = SummaryWriter("/home/nikunj/work/HAMMER/test/logs/IL")
 
     torch.manual_seed(config.seed)
     np.random.seed(config.seed)
@@ -85,7 +85,8 @@ def run(config):
         ep_rews = replay_buffer.get_average_rewards(
             config.episode_length * config.n_rollout_threads)
         for a_i, a_ep_rew in enumerate(ep_rews):
-            logger.add_scalar('agent%i/mean_episode_rewards' % a_i, a_ep_rew, ep_i)
+            logger.add_scalar('mean_episode_reward', a_ep_rew, ep_i) 
+            break 
 
         if ep_i % config.save_interval < config.n_rollout_threads:
             os.makedirs(run_dir / 'incremental', exist_ok=True)
@@ -101,7 +102,7 @@ def run(config):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--env_id", default="simple_spread", help="Name of environment")
-    parser.add_argument("--model_name", default="logs/",
+    parser.add_argument("--model_name", default="logs/", 
                         help="Name of directory to store " +
                              "model/training contents")
     parser.add_argument("--seed",
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     parser.add_argument("--lr", default=0.01, type=float)
     parser.add_argument("--tau", default=0.01, type=float)
     parser.add_argument("--agent_alg",
-                        default="MADDPG", type=str,
+                        default="DDPG", type=str,
                         choices=['MADDPG', 'DDPG'])
     parser.add_argument("--adversary_alg",
                         default="MADDPG", type=str,

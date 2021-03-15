@@ -1,13 +1,11 @@
 import argparse
 from itertools import count
 
-# from tensorboardX import SummaryWriter
+from tensorboardX import SummaryWriter 
 
 from local_agents.ppo_discrete import PPO as LocalPolicy 
-# from global_messenger.ppo import PPO as GlobalPolicy 
 from global_messenger.ppo_single_update import PPO as GlobalPolicy 
 from local_agents.ppo_discrete import Memory 
-# from baselines.independent_learners.sac import SACAgent 
 
 from pettingzoo.mpe import simple_spread_v2
 from utils import read_config
@@ -126,9 +124,7 @@ def run(args = None):
     def load(i, path):
         local_agent[i].policy_old.load_state_dict(torch.load(path))
 
-    if args.prevactions: 
-        print("Using Previous Actions") 
-    global_state_dim = (obs_dim * args.nagents) + args.nagents if args.prevactions else (obs_dim * args.nagents)
+    global_state_dim = obs_dim * args.nagents 
     global_agent = GlobalPolicy(
         state_dim=global_state_dim, # all local observations concatenated + all agents' previous actions
         action_dim=args.meslen*args.nagents, 
@@ -144,10 +140,10 @@ def run(args = None):
         is_discrete = args.discretemes
     )
 
-    load(0, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-0.pth")
-    load(1, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-1.pth")
-    load(2, "save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/local_agent-2.pth")
-    global_agent.policy_old.load_state_dict(torch.load("save-dir/TRAINED!/hammer-prevactionsno--partialobsyes--sharedparamsno--heterogeneityno--discretemes--rs984--meslen4-/global_agent.pth"))
+    load(0, str(os.path.join(args.load, "local_agent-0.pth"))) 
+    load(1, str(os.path.join(args.load, "local_agent-1.pth"))) 
+    load(2, str(os.path.join(args.load, "local_agent-2.pth"))) 
+    global_agent.policy_old.load_state_dict(torch.load(str(os.path.join(args.load, "global_agent.pth")))) 
 
 
     # logging variables
@@ -175,10 +171,12 @@ def run(args = None):
     episodic_messages = [[] for agent in agents]
 
     for timestep in count(1):
-        env.render()
+        # env.render()
         if MAIN: 
             if args.randommes: 
                 global_agent_output = np.random.uniform(0, 1, args.nagents*args.meslen) 
+            elif args.zeros: 
+                global_agent_output = np.zeros(args.nagents*args.meslen)
             else: 
                 global_agent_output, global_agent_log_prob = global_agent.select_action(global_agent_state)
             global_agent_output = global_agent_output.reshape(args.nagents, args.meslen) 
@@ -205,7 +203,7 @@ def run(args = None):
         for i, agent in enumerate(agents):
             episode_rewards += rewards[agent]
 
-        if MAIN and (not args.randommes): 
+        if MAIN: 
             global_agent_output = global_agent_output.reshape(-1) 
 
         obs = next_obs
@@ -213,9 +211,11 @@ def run(args = None):
 
         # If episode had ended
         if all([is_terminals[agent] for agent in agents]):
-            i_episode += 1
-            analyse_message(args.discretemes, episodic_messages)
-            # writer.add_scalar('Avg reward for each agent, after an episode', episode_rewards/args.nagents, i_episode)
+            i_episode += 1 
+            print(episodic_messages) 
+            exit(0) 
+            # analyse_message(args.discretemes, episodic_messages)
+            writer.add_scalar('Average Episodic Reward per agent', episode_rewards/args.nagents, i_episode) 
             if args.heterogeneity: 
                 obs = preprocess_one_obs(env.reset(), limit=args.limit) 
             elif args.partialobs: 
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default='configs/2021/cn/hyperparams.yaml', help="config file name")
-    parser.add_argument("--load", type=bool, default=False, help="load true / false") 
+    parser.add_argument("--load", type=str, default=None, help="load path") 
 
     parser.add_argument("--hammer", type=int, default=1, help="1 for hammer; 0 for IL")
     parser.add_argument("--expname", type=str, default=None)
@@ -245,21 +245,22 @@ if __name__ == '__main__':
 
     parser.add_argument("--maxepisodes", type=int, default=30000) 
     parser.add_argument("--prevactions", type=int, default=0) 
-    parser.add_argument("--partialobs", type=int, default=1) 
-    parser.add_argument("--sharedparams", type=int, default=0) 
+    parser.add_argument("--partialobs", type=int, default=0) 
+    parser.add_argument("--sharedparams", type=int, default=1) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=10) 
     parser.add_argument("--maxcycles", type=int, default=25) 
     parser.add_argument("--randommes", type=int, default=0) 
+    parser.add_argument("--zeros", type=int, default=0) 
 
 
-    parser.add_argument("--meslen", type=int, default=3, help="message length")
-    parser.add_argument("--discretemes", type=int, default=1)
-    parser.add_argument("--randomseed", type=int, default=10)
+    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--discretemes", type=int, default=0)
+    parser.add_argument("--randomseed", type=int, default=465) 
     parser.add_argument("--render", type=bool, default=False)
 
     parser.add_argument("--saveinterval", type=int, default=1000) 
-    parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
+    parser.add_argument("--logdir", type=str, default="analysis_logs2", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
     
 

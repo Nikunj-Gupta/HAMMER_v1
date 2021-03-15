@@ -225,7 +225,7 @@ class PPO:
         self.is_discrete = is_discrete  
 
     def load(self, dir):
-        self.policy.load_state_dict(torch.load(os.path.join(dir, 'global_encoder.pth')))
+        self.policy_old.load_state_dict(torch.load(os.path.join(dir, 'global_encoder.pth')))
         for i in range(self.n_agents): 
             self.policy_old.global_actor_decoder[i].load_state_dict(torch.load(os.path.join(dir, 'gad{}.pth'.format(i))))
 

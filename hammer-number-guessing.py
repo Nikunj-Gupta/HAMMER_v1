@@ -48,20 +48,21 @@ def run(args):
         "dru"+str(args.dru_toggle), 
         # "sharedparams"+str(args.sharedparams), 
         "meslen"+str(args.meslen), 
-        "rs", str(args.randomseed) 
+        "rs", str(args.randomseed), 
+        "test"
  
     ])
     
-    writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
-    # log_dir = Path('./logs/GUESSER_GAME')
-    # for i in count(0):
-    #     temp = log_dir/('run{}'.format(i)) 
-    #     if temp.exists():
-    #         pass
-    #     else:
-    #         writer = SummaryWriter(logdir=temp)
-    #         log_dir = temp
-    #         break
+    # writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
+    log_dir = Path('./logs/GUESSER_GAME')
+    for i in count(0):
+        temp = log_dir/('run{}'.format(i)) 
+        if temp.exists():
+            pass
+        else:
+            writer = SummaryWriter(logdir=temp)
+            log_dir = temp
+            break
 
     betas = (0.9, 0.999)
 
@@ -94,9 +95,9 @@ def run(args):
 
     obs = env.reset() 
 
-    i_episode = 0
+    i_episode = -1
     episode_rewards = 0
-
+    ep_rew = []
     for timestep in count(1):
 
         action_array = [] 
@@ -104,7 +105,8 @@ def run(args):
         next_obs, rewards, is_terminals, infos = env.step(actions) 
 
         HAMMER.memory_record(rewards, is_terminals) 
-        episode_rewards += np.mean(list(rewards.values()))        
+        episode_rewards += np.mean(list(rewards.values())) 
+        ep_rew.append(episode_rewards) 
         # update if its time
         if timestep % config["global"]["update_timestep"] == 0: 
             HAMMER.update()
@@ -127,7 +129,8 @@ def run(args):
                 os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
             HAMMER.save(os.path.join(args.savedir, str(i_episode)+"_"+expname))     
         if i_episode == args.maxepisodes:
-            break
+            break 
+    print(np.mean(ep_rew))
 
 if __name__ == '__main__':
 
@@ -139,17 +142,17 @@ if __name__ == '__main__':
     parser.add_argument("--nagents", type=int, default=2)
     parser.add_argument("--scale", type=float, default=1.0) 
 
-    parser.add_argument("--maxepisodes", type=int, default=50_000) 
+    parser.add_argument("--maxepisodes", type=int, default=10_000) 
 
     parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
 
     parser.add_argument("--meslen", type=int, default=1, help="message length")
-    parser.add_argument("--randomseed", type=int, default=999)
+    parser.add_argument("--randomseed", type=int, default=99)
 
-    parser.add_argument("--saveinterval", type=int, default=1) 
-    parser.add_argument("--logdir", type=str, default="sumguesser-logs/", help="log directory path")
-    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir/", help="save directory path")
+    parser.add_argument("--saveinterval", type=int, default=10_000) 
+    parser.add_argument("--logdir", type=str, default="sumguesser-logs-new/", help="log directory path")
+    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir-new/", help="save directory path")
     
 
     args = parser.parse_args() 
