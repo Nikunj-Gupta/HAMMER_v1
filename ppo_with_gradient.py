@@ -85,7 +85,11 @@ class ActorCritic(nn.Module):
 
         self.action_var = torch.full((single_action_dim,), self.action_std * self.action_std).to(device)
 
-    def global_actor(self, state):
+    def global_actor(self, state): 
+        # """ 
+        # Implementation hack for SumGuessing Game (pushing hard-coded pre-decided messages like obs_sum) 
+        # """ 
+        # message = [sum(state.reshape(-1)).reshape(-1, 1)]*self.n_agents # passing sum of obs as messages for each local agent 
         latent_vector = self.global_encoder(state)
         message = []
         for decoder in self.global_actor_decoder: 
