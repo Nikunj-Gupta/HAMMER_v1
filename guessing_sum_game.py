@@ -39,7 +39,7 @@ class GuessingSumEnv:
         self.sum = sum(self.observations) # np.prod(self.observations) 
         obs = {}
         for i, agent in enumerate(self.agents):
-            obs[agent] = np.array(observations[i])
+            obs[agent] = np.append(observations[i], [self.sum])
         return obs
 
     def render(self, mode='human'):

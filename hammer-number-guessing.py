@@ -24,7 +24,7 @@ def run(args):
     env.reset()
     agents = env.agents
 
-    obs_dim = 1
+    obs_dim = 2
         
     action_dim = 1 
 
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
 
-    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--meslen", type=int, default=0, help="message length")
     parser.add_argument("--randomseed", type=int, default=99)
 
     parser.add_argument("--saveinterval", type=int, default=10_000) 
