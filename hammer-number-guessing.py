@@ -44,17 +44,13 @@ def run(args):
     expname = "--".join([
         args.envname, 
         "nagents"+str(args.nagents), 
-        # "scale"+str(args.scale), 
         "dru"+str(args.dru_toggle), 
-        # "sharedparams"+str(args.sharedparams), 
         "meslen"+str(args.meslen), 
         "rs", str(args.randomseed), 
-        "test"
- 
     ])
     
     # writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
-    log_dir = Path('./logs/GUESSER_GAME')
+    log_dir = Path(os.path.join(args.logdir, expname))
     for i in count(0):
         temp = log_dir/('run{}'.format(i)) 
         if temp.exists():
@@ -142,7 +138,7 @@ if __name__ == '__main__':
     parser.add_argument("--nagents", type=int, default=2)
     parser.add_argument("--scale", type=float, default=1.0) 
 
-    parser.add_argument("--maxepisodes", type=int, default=10_000) 
+    parser.add_argument("--maxepisodes", type=int, default=50_000) 
 
     parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
@@ -151,8 +147,8 @@ if __name__ == '__main__':
     parser.add_argument("--randomseed", type=int, default=99)
 
     parser.add_argument("--saveinterval", type=int, default=10_000) 
-    parser.add_argument("--logdir", type=str, default="sumguesser-logs-new/", help="log directory path")
-    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir-new/", help="save directory path")
+    parser.add_argument("--logdir", type=str, default="sumguesser-logs-3agents/", help="log directory path")
+    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir-3agents/", help="save directory path")
     
 
     args = parser.parse_args() 
