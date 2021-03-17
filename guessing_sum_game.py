@@ -12,16 +12,6 @@ class GuessingSumEnv:
 
     def step(self, actions):
         actions = list(actions.values()) 
-        # rewards = []
-        # for action in actions:
-        #     rewards.append(np.sum(-np.abs(action - self.observations))) # [-Inf ; 0]
-
-
-
-
-        # actions = np.array(list(actions.values())).reshape(-1, 1)
-        # if actions.shape != (self.num_agents, 1):
-        #     raise Exception('got input shape ', actions.shape, ' instead of ', (self.num_agents, 1))
 
         observations = None
         rewards = -np.abs(actions - self.sum) # [-Inf ; 0]
@@ -46,7 +36,7 @@ class GuessingSumEnv:
             # observations = np.clip(np.random.normal(size=(self.num_agents, 1)), -self.scale, self.scale) 
             observations = np.random.uniform(-self.scale, self.scale,size=(self.num_agents, 1)) 
         self.observations = observations.reshape(-1) 
-        self.sum = sum(self.observations) 
+        self.sum = sum(self.observations) # np.prod(self.observations) 
         obs = {}
         for i, agent in enumerate(self.agents):
             obs[agent] = np.array(observations[i])
