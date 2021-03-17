@@ -89,3 +89,36 @@ sum-guesser-analyze:
 	--load sumguesser-save-dir-new/0_guesser--nagents2--dru0--meslen0--rs--99 --meslen 0 --nagents 2 
 	# python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
 	# --load sumguesser-save-dir-new/50000_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
+
+sumguesser-3agents: 
+	clear 
+	# python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 
+	# python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 
+
+sumguesser-analyze-3agents: 
+	clear 
+	python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
+	--load sumguesser-save-dir-3agents/50000_guesser--nagents3--dru0--meslen1--rs--99 --meslen 1 --nagents 3 
+	# python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
+	# --load sumguesser-save-dir-new/50000_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
+
+sumgame-hardcode: 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname harcoded_messages_guesser 
+
+multiplygame-2agents: 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname multiply_guesser 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 1 --randomseed 99 --envname multiply_guesser 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 1 --randomseed 99 --envname multiply_guesser 
+
+multiplygame-3agents: 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname multiply_guesser 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname multiply_guesser 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 --envname multiply_guesser 
+
+multiplyguesser-analyze-2agents: 
+	clear 
+	python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
+	--load sumguesser-save-dir-3agents/50000_multiply_guesser--nagents2--dru0--meslen1--rs--99 --meslen 1 --nagents 2 
+	# python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
+	# --load sumguesser-save-dir-new/50000_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
