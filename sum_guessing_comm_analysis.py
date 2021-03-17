@@ -17,34 +17,137 @@ from pathlib import Path
 
 from guessing_sum_game import GuessingSumEnv
 
-def plot(obs, actions, messages, discrete_mes=False): 
-    columns = ["index", "obs1", "obs2", "action1", "action2", "message1", "message2"]
-    df = pd.DataFrame(columns=columns) 
-
-    for i in range(len(obs)): 
-        point = [0, obs[i]["Agent0"][0], obs[i]["Agent1"][0], actions[i]["Agent0"][0], actions[i]["Agent1"][0]] 
-        point.extend(messages[i][0]) 
-        point.extend(messages[i][1]) 
-        df = df.append(pd.DataFrame([point], columns=columns)) 
+def plot(obs, actions, messages, discrete_mes=False, nagents=3): 
+    columns = ["index"] 
+    for i in range(nagents): 
     
-    df["obs_sum"] = df["obs1"] + df["obs2"] 
+        columns.append("obs"+str(i+1)) 
+        columns.append("action"+str(i+1)) 
+        columns.append("message"+str(i+1)) 
+    
+    df = pd.DataFrame(columns=columns) 
+    for k in range(len(obs)): 
+        point=[0] 
+        for i in range(nagents): 
+            point.append(list(obs[k].values())[i][0]) 
+            point.append(list(actions[k].values())[i][0]) 
+            point.append(messages[k][i][0]) 
+        df = df.append(pd.DataFrame([point], columns=columns)) 
+
+    print(df) 
+    df["obs_sum"] = df["obs1"] + df["obs2"] + df["obs3"] 
+    df["obs12_sum"] = df["obs1"] + df["obs2"] 
+    df["obs13_sum"] = df["obs1"] + df["obs3"] 
+    df["obs32_sum"] = df["obs3"] + df["obs2"] 
+
     df["action1_err"] = abs(df["action1"] - df["obs_sum"]) 
     df["action2_err"] = abs(df["action2"] - df["obs_sum"]) 
+    df["action3_err"] = abs(df["action3"] - df["obs_sum"]) 
 
-    # print(df) 
     
-    # Mean and Standard Deviation 
-    print(df["action1_err"].mean(), df["action1_err"].std()) # 0.7698002555758323, 0.5571670516844823 in 10000 eps 
-    print(df["action2_err"].mean(), df["action2_err"].std()) # 0.7838607136086739, 0.5664230119884279 in 10000 eps 
+    savedir = "sumgame_analysis/multiply/2agents" 
+    savedir = "sumgame_analysis/3agents/" 
+    if not os.path.exists(savedir): os.makedirs(savedir)
+    # x="obs1"
+    # y="obs2"
+    # c="message1"
+    # name="--".join([x,y,c]) 
+
+    plots = [
+        # {
+        #     "x": "obs1", 
+        #     "y": "obs2", 
+        #     "c": "message1" 
+        # }, 
+        
+        # {
+        #     "x": "obs1", 
+        #     "y": "obs2", 
+        #     "c": "message2" 
+        # }, 
+
+        {
+            "x": "obs2", 
+            "y": "obs3", 
+            "c": "message1" 
+        }, 
+
+        # {
+        #     "x": "obs1", 
+        #     "y": "obs3", 
+        #     "c": "message1" 
+        # }, 
+
+        {
+            "x": "obs1", 
+            "y": "obs32_sum", 
+            "c": "message1" 
+        }, 
+
+        # {
+        #     "x": "obs2", 
+        #     "y": "obs13_sum", 
+        #     "c": "message2" 
+        # }, 
+
+        # {
+        #     "x": "obs3", 
+        #     "y": "obs12_sum", 
+        #     "c": "message3" 
+        # }, 
+        # {
+        #     "x": "obs1", 
+        #     "y": "obs13_sum", 
+        #     "c": "message1" 
+        # }, 
+
+        # {
+        #     "x": "obs1", 
+        #     "y": "obs12_sum", 
+        #     "c": "message1" 
+        # }, 
+
+
+    ]
+
+    for p in plots: 
+        name = "--".join([p["x"],p["y"],p["c"]]) 
+        df.plot.scatter(x=p["x"], y=p["y"], c=p["c"], colormap="viridis") 
+        plt.savefig(os.path.join(savedir, name+".png")) 
+        # plt.show() 
+
     
-    # Message trend for both obs1 and obs2 
-    d = "sumgame_analysis/somemore_discrete/" 
+    
+    """ 
+    Previous 
+    """
+    # columns = ["index", "obs1", "obs2", "action1", "action2", "message1", "message2"]
+    # df = pd.DataFrame(columns=columns) 
+
+    # for i in range(len(obs)): 
+    #     point = [0, obs[i]["Agent0"][0], obs[i]["Agent1"][0], actions[i]["Agent0"][0], actions[i]["Agent1"][0]] 
+    #     point.extend(messages[i][0]) 
+    #     point.extend(messages[i][1]) 
+    #     df = df.append(pd.DataFrame([point], columns=columns)) 
+    
+    # df["obs_sum"] = df["obs1"] + df["obs2"] 
+    # df["action1_err"] = abs(df["action1"] - df["obs_sum"]) 
+    # df["action2_err"] = abs(df["action2"] - df["obs_sum"]) 
+
+    # # print(df) 
+    
+    # # Mean and Standard Deviation 
+    # print(df["action1_err"].mean(), df["action1_err"].std()) # 0.7698002555758323, 0.5571670516844823 in 10000 eps 
+    # print(df["action2_err"].mean(), df["action2_err"].std()) # 0.7838607136086739, 0.5664230119884279 in 10000 eps 
+    
+    # # Message trend for both obs1 and obs2 
+    # d = "sumgame_analysis/somemore_discrete/" 
     
     
-    if discrete_mes: 
-        for m in ["message1", "message2"]: 
-            df.loc[df[m] < 0.5, m] = 0 
-            df.loc[df[m] >= 0.5, m] = 1 
+    # if discrete_mes: 
+    #     for m in ["message1", "message2"]: 
+    #         df.loc[df[m] < 0.5, m] = 0 
+    #         df.loc[df[m] >= 0.5, m] = 1 
     
     # df.plot.scatter(x="message1", y="message2", c="obs_sum", colormap="viridis") 
     # plt.savefig(d+'1.png') 
@@ -117,32 +220,6 @@ def plot(obs, actions, messages, discrete_mes=False):
 
     # plt.show() 
 
-def plot_discrete(obs, actions, messages): 
-    # print(obs) 
-    # print(actions) 
-    x=[]
-    for i in messages: 
-        # print(i)
-        temp = ""
-        for k in i: 
-            for n in k: 
-                temp = temp+str(1) if n>=0.5 else temp+str(0) 
-        x.append(temp) 
-    messages = x 
-    print(messages)
-
-    # columns = ["index", "obs1", "obs2", "action1", "action2", "message"]
-    # df = pd.DataFrame(columns=columns) 
-    
-    # for i in range(len(obs)): 
-    #     point = [0, obs[i]["Agent0"][0], obs[i]["Agent1"][0], actions[i]["Agent0"][0], actions[i]["Agent1"][0]] 
-    #     point.extend(messages[i][0]) 
-    #     df = df.append(pd.DataFrame([point], columns=columns)) 
-    # # df["obs_sum"] = df["obs1"] + df["obs2"] 
-    # df["action1_err"] = abs(df["action1"] - df["obs_sum"]) 
-    # df["action2_err"] = abs(df["action2"] - df["obs_sum"]) 
-
-    # print(df) 
 
 def run(args):
     
@@ -188,7 +265,7 @@ def run(args):
         is_discrete=0
     ) 
     HAMMER.load(args.load)
-    log_dir = Path('./sumguesser-logs-new/')
+    log_dir = Path('sumguesser-logs-3agents/')
     for i in count(0):
         temp = log_dir/('run{}'.format(i)) 
         if temp.exists():
@@ -223,8 +300,6 @@ def run(args):
         action_array = [] 
 
         actions, messages = HAMMER.policy_old.act(obs, HAMMER.memory, HAMMER.global_memory) 
-        messages[0]=np.array([0])
-        messages[1]=np.array([0])
         obs_set.append(obs)
         action_set.append(actions) 
         message_set.append(messages) 
@@ -250,7 +325,7 @@ def run(args):
 
     print(np.mean(ep_rew)) 
 
-    plot(obs=obs_set, actions=action_set, messages=message_set, discrete_mes=args.dru_toggle) 
+    plot(obs=obs_set, actions=action_set, messages=message_set, discrete_mes=args.dru_toggle, nagents=args.nagents) 
 
 if __name__ == '__main__':
 
