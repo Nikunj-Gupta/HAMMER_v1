@@ -46,24 +46,22 @@ class ActorCritic(nn.Module):
 
         layers = [] 
         layers.append(nn.Linear(single_state_dim + self.meslen, actor_layer[0])) 
-        layers.append(nn.Tanh()) 
+        layers.append(nn.RReLU()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
-            layers.append(nn.Tanh()) 
+            layers.append(nn.RReLU()) 
         layers.append(nn.Linear(actor_layer[-1], single_action_dim)) 
         if self.is_discrete:
             layers.append(nn.Softmax(dim=-1)) 
-        else: 
-            layers.append(nn.Tanh()) 
         self.actor = [nn.Sequential(*layers) for _ in range(self.num_local_networks)] 
         
         # global actor
         layers = [] 
         layers.append(nn.Linear(single_state_dim * self.n_agents, actor_layer[0])) 
-        layers.append(nn.Tanh()) 
+        layers.append(nn.RReLU()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
-            layers.append(nn.Tanh()) 
+            layers.append(nn.RReLU()) 
         self.global_encoder = nn.Sequential(*layers)
 
         # not using nn.ModuleList to ensure that the global_actor_decoder parameters are not taken into the parameters.
@@ -76,20 +74,16 @@ class ActorCritic(nn.Module):
         # critic
         layers = [] 
         layers.append(nn.Linear(single_state_dim + self.meslen, critic_layer[0])) 
-        layers.append(nn.Tanh()) 
+        layers.append(nn.RReLU()) 
         for i in range(len(critic_layer[1:])): 
             layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
-            layers.append(nn.Tanh()) 
+            layers.append(nn.RReLU()) 
         layers.append(nn.Linear(critic_layer[-1], 1)) 
         self.critic = [nn.Sequential(*layers) for _ in range(self.num_local_networks)] 
 
         self.action_var = torch.full((single_action_dim,), self.action_std * self.action_std).to(device)
 
     def global_actor(self, state): 
-        # """ 
-        # Implementation hack for SumGuessing Game (pushing hard-coded pre-decided messages like obs_sum) 
-        # """ 
-        # message = [sum(state.reshape(-1)).reshape(-1, 1)]*self.n_agents # passing sum of obs as messages for each local agent 
         latent_vector = self.global_encoder(state)
         message = []
         for decoder in self.global_actor_decoder: 
@@ -223,7 +217,8 @@ class PPO:
                 is_discrete=is_discrete, sharedparams=sharedparams).to(device) 
         self.policy_old.load_state_dict(self.policy.state_dict())
 
-        self.MseLoss = nn.MSELoss()
+        self.MseLoss = nn.MSELoss() 
+        self.single_state_dim = single_state_dim 
         self.single_action_dim = single_action_dim
         self.meslen = meslen 
         self.is_discrete = is_discrete  
@@ -289,7 +284,7 @@ class PPO:
         for epoch in range(self.K_epochs): 
             
             old_global_state = torch.stack(self.global_memory.states) # 800x1x54
-            old_global_state = torch.squeeze(old_global_state) # 800x54
+            old_global_state = old_global_state.reshape(-1, self.single_state_dim*self.n_agents) # 800x54
             
             for i in range(self.n_agents):
                 ################## CAVEAT: This is redundant, slows the process!#############
