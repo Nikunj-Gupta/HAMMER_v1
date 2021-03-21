@@ -98,13 +98,10 @@ sumguesser-3agents:
 
 sumguesser-analyze-3agents: 
 	clear 
-	python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
-	--load sumguesser-save-dir-3agents/50000_guesser--nagents3--dru0--meslen1--rs--99 --meslen 1 --nagents 3 
-	# python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
-	# --load sumguesser-save-dir-new/50000_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
-
-sumgame-hardcode: 
-	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname harcoded_messages_guesser 
+	# python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
+	# --load sumguesser-save-dir-3agents/50000_guesser--nagents3--dru0--meslen1--rs--99 --meslen 1 --nagents 3 
+	python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
+	--load sumguesser-save-dir-3agents/50000_guesser--nagents3--dru1--meslen1--rs--99 --meslen 1 --nagents 3 
 
 multiplygame-2agents: 
 	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname multiply_guesser 
@@ -112,13 +109,64 @@ multiplygame-2agents:
 	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 1 --randomseed 99 --envname multiply_guesser 
 
 multiplygame-3agents: 
-	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname multiply_guesser 
-	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname multiply_guesser 
-	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 --envname multiply_guesser 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname multiply_guesser --maxepisodes 200000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname multiply_guesser --maxepisodes 200000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 --envname multiply_guesser --maxepisodes 200000
 
 multiplyguesser-analyze-2agents: 
 	clear 
 	python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
 	--load sumguesser-save-dir-3agents/50000_multiply_guesser--nagents2--dru0--meslen1--rs--99 --meslen 1 --nagents 2 
 	# python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
-	# --load sumguesser-save-dir-new/50000_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
+	# --load sumguesser-save-dir-3agents/50000_multiply_guesser--nagents2--dru1--meslen1--rs--99 --meslen 1 --nagents 2 
+
+multiplyguesser-analyze-3agents: 
+	clear 
+	# python3 sum_guessing_comm_analysis.py --dru_toggle 0 \
+	# --load prodguesser-save-dir-3agents/multiply_guesser--nagents3--dru0--meslen1--rs--99/checkpoint_200000 --meslen 1 --nagents 3 --maxepisodes 20000
+	python3 sum_guessing_comm_analysis.py --dru_toggle 1 \
+	--load prodguesser-save-dir-3agents/multiply_guesser--nagents3--dru1--meslen1--rs--99/checkpoint_200000 --meslen 1 --nagents 3 
+
+sumgame-hardcode: 
+	# python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname harcoded_sum 
+	# python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname harcoded_sum 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname harcoded_other_obs 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname harcoded_other_obs 
+
+sumgame-test: 
+	python3 hammer-number-guessing.py --nagents 1 --dru_toggle 0 --meslen 0 --randomseed 99 --envname hammer-test --scale 10.0 
+
+sumgame-mar21--1: 
+	# IL 
+	python3 hammer-number-guessing.py --nagents 1 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer 
+
+sumgame-mar21--2: 
+	# HAMMER-Continuous 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 1 --randomseed 99 --envname newhammer 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname newhammer 
+
+sumgame-mar21--3: 
+	# HAMMER-Discrete 
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 1 --randomseed 99 --envname newhammer 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 --envname newhammer 
+
+
+sumgame-runs--1: 
+	python3 hammer-number-guessing.py --nagents 1 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 0 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 0 --meslen 1 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 0 --meslen 1 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+sumgame-runs--2:
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 1 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 2 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 3 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 2 --dru_toggle 1 --meslen 4 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+sumgame-runs--3: 
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 1 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 2 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 3 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 4 --randomseed 99 --envname newhammer2 --maxepisodes 100_000

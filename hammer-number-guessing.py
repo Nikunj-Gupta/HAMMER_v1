@@ -24,7 +24,7 @@ def run(args):
     env.reset()
     agents = env.agents
 
-    obs_dim = 1
+    obs_dim = 1 
         
     action_dim = 1 
 
@@ -45,20 +45,23 @@ def run(args):
         args.envname, 
         "nagents"+str(args.nagents), 
         "dru"+str(args.dru_toggle), 
-        "meslen"+str(args.meslen), 
+        "meslen"+str(args.meslen),
+        # "update_timestep", str(config["local"]["update_timestep"]),  
+        # "lr", str(config["local"]["lr"]),  
+        # "K_epochs", str(config["local"]["K_epochs"]), 
         "rs", str(args.randomseed), 
     ])
     
-    # writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
-    log_dir = Path(os.path.join(args.logdir, expname))
-    for i in count(0):
-        temp = log_dir/('run{}'.format(i)) 
-        if temp.exists():
-            pass
-        else:
-            writer = SummaryWriter(logdir=temp)
-            log_dir = temp
-            break
+    writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
+    # log_dir = Path(os.path.join(args.logdir, expname))
+    # for i in count(0):
+    #     temp = log_dir/('run{}'.format(i)) 
+    #     if temp.exists():
+    #         pass
+    #     else:
+    #         writer = SummaryWriter(logdir=temp)
+    #         log_dir = temp
+    #         break
 
     betas = (0.9, 0.999)
 
@@ -121,9 +124,9 @@ def run(args):
 
         # save every 50 episodes
         if i_episode % args.saveinterval == 0:
-            if not os.path.exists(os.path.join(args.savedir, str(i_episode)+"_"+expname)):
-                os.makedirs(os.path.join(args.savedir, str(i_episode)+"_"+expname))
-            HAMMER.save(os.path.join(args.savedir, str(i_episode)+"_"+expname))     
+            if not os.path.exists(os.path.join(args.savedir, expname, "checkpoint_"+str(i_episode))): 
+                os.makedirs(os.path.join(args.savedir, expname, "checkpoint_"+str(i_episode))) 
+            HAMMER.save(os.path.join(args.savedir, expname, "checkpoint_"+str(i_episode))) 
         if i_episode == args.maxepisodes:
             break 
     print(np.mean(ep_rew))
@@ -136,7 +139,7 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--envname", type=str, default='guesser')
     parser.add_argument("--nagents", type=int, default=2)
-    parser.add_argument("--scale", type=float, default=1.0) 
+    parser.add_argument("--scale", type=float, default=10.0) 
 
     parser.add_argument("--maxepisodes", type=int, default=50_000) 
 
@@ -146,9 +149,9 @@ if __name__ == '__main__':
     parser.add_argument("--meslen", type=int, default=1, help="message length")
     parser.add_argument("--randomseed", type=int, default=99)
 
-    parser.add_argument("--saveinterval", type=int, default=10_000) 
-    parser.add_argument("--logdir", type=str, default="sumguesser-logs-3agents/", help="log directory path")
-    parser.add_argument("--savedir", type=str, default="sumguesser-save-dir-3agents/", help="save directory path")
+    parser.add_argument("--saveinterval", type=int, default=50_000) 
+    parser.add_argument("--logdir", type=str, default="sumguesser-mar21/logs/", help="log directory path")
+    parser.add_argument("--savedir", type=str, default="sumguesser-mar21/save-dir", help="save directory path")
     
 
     args = parser.parse_args() 
