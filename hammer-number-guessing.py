@@ -53,15 +53,15 @@ def run(args):
     ])
     
     writer = SummaryWriter(logdir=os.path.join(args.logdir, expname)) 
-    # log_dir = Path(os.path.join(args.logdir, expname))
-    # for i in count(0):
-    #     temp = log_dir/('run{}'.format(i)) 
-    #     if temp.exists():
-    #         pass
-    #     else:
-    #         writer = SummaryWriter(logdir=temp)
-    #         log_dir = temp
-    #         break
+    log_dir = Path(os.path.join(args.logdir, expname))
+    for i in count(0):
+        temp = log_dir/('run{}'.format(i)) 
+        if temp.exists():
+            pass
+        else:
+            writer = SummaryWriter(logdir=temp)
+            log_dir = temp
+            break
 
     betas = (0.9, 0.999)
 
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--envname", type=str, default='guesser')
-    parser.add_argument("--nagents", type=int, default=2)
+    parser.add_argument("--nagents", type=int, default=1)
     parser.add_argument("--scale", type=float, default=10.0) 
 
     parser.add_argument("--maxepisodes", type=int, default=50_000) 
@@ -146,12 +146,12 @@ if __name__ == '__main__':
     parser.add_argument("--dru_toggle", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
 
-    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--meslen", type=int, default=0, help="message length")
     parser.add_argument("--randomseed", type=int, default=99)
 
     parser.add_argument("--saveinterval", type=int, default=50_000) 
-    parser.add_argument("--logdir", type=str, default="sumguesser-mar21/logs/", help="log directory path")
-    parser.add_argument("--savedir", type=str, default="sumguesser-mar21/save-dir", help="save directory path")
+    parser.add_argument("--logdir", type=str, default="test/logs/", help="log directory path")
+    parser.add_argument("--savedir", type=str, default="test/save-dir", help="save directory path")
     
 
     args = parser.parse_args() 

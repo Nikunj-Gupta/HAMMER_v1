@@ -46,10 +46,10 @@ class ActorCritic(nn.Module):
 
         layers = [] 
         layers.append(nn.Linear(single_state_dim + self.meslen, actor_layer[0])) 
-        layers.append(nn.RReLU()) 
+        layers.append(nn.ReLU()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
-            layers.append(nn.RReLU()) 
+            layers.append(nn.ReLU()) 
         layers.append(nn.Linear(actor_layer[-1], single_action_dim)) 
         if self.is_discrete:
             layers.append(nn.Softmax(dim=-1)) 
@@ -58,10 +58,10 @@ class ActorCritic(nn.Module):
         # global actor
         layers = [] 
         layers.append(nn.Linear(single_state_dim * self.n_agents, actor_layer[0])) 
-        layers.append(nn.RReLU()) 
+        layers.append(nn.ReLU()) 
         for i in range(len(actor_layer[1:])): 
             layers.append(nn.Linear(actor_layer[i], actor_layer[i+1]))
-            layers.append(nn.RReLU()) 
+            layers.append(nn.ReLU()) 
         self.global_encoder = nn.Sequential(*layers)
 
         # not using nn.ModuleList to ensure that the global_actor_decoder parameters are not taken into the parameters.
@@ -74,10 +74,10 @@ class ActorCritic(nn.Module):
         # critic
         layers = [] 
         layers.append(nn.Linear(single_state_dim + self.meslen, critic_layer[0])) 
-        layers.append(nn.RReLU()) 
+        layers.append(nn.ReLU()) 
         for i in range(len(critic_layer[1:])): 
             layers.append(nn.Linear(critic_layer[i], critic_layer[i+1]))
-            layers.append(nn.RReLU()) 
+            layers.append(nn.ReLU()) 
         layers.append(nn.Linear(critic_layer[-1], 1)) 
         self.critic = [nn.Sequential(*layers) for _ in range(self.num_local_networks)] 
 

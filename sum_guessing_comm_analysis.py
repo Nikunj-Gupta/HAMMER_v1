@@ -223,7 +223,7 @@ def plot(obs, actions, messages, discrete_mes=False, nagents=3):
 
 def run(args):
     
-    SCALE = 1.0
+    SCALE = 10.0
     env = GuessingSumEnv(num_agents=args.nagents, scale=SCALE, discrete=0)
 
     env.reset()
@@ -265,7 +265,8 @@ def run(args):
         is_discrete=0
     ) 
     HAMMER.load(args.load)
-    log_dir = Path('sumguesser-logs-3agents/')
+    HAMMER.policy_old.action_var[0] = 1e-10
+    log_dir = Path('test/eval')
     for i in count(0):
         temp = log_dir/('run{}'.format(i)) 
         if temp.exists():
@@ -331,12 +332,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default='configs/2021/guesser/hyperparams.yaml', help="config file name")
-    parser.add_argument("--load", type=str, default="sumguesser-save-dir-new/50000_guesser--nagents2--dru0--meslen1--rs--999") 
+    parser.add_argument("--load", type=str, default="test/save-dir/guesser--nagents1--dru0--meslen0--rs--99/checkpoint_50000") 
 
-    parser.add_argument("--nagents", type=int, default=2)
+    parser.add_argument("--nagents", type=int, default=1)
     parser.add_argument("--maxepisodes", type=int, default=10000) 
     parser.add_argument("--dru_toggle", type=int, default=0) 
-    parser.add_argument("--meslen", type=int, default=1, help="message length")
+    parser.add_argument("--meslen", type=int, default=0, help="message length")
     parser.add_argument("--randomseed", type=int, default=99)
 
     args = parser.parse_args() 
