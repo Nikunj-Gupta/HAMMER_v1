@@ -255,7 +255,7 @@ if __name__ == '__main__':
     parser.add_argument("--expname", type=str, default=None)
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=500_000) 
+    parser.add_argument("--maxepisodes", type=int, default=30_000) 
     parser.add_argument("--prevactions", type=int, default=0) 
     parser.add_argument("--partialobs", type=int, default=0) 
     parser.add_argument("--sharedparams", type=int, default=0) 
@@ -270,7 +270,7 @@ if __name__ == '__main__':
     parser.add_argument("--randomseed", type=int, default=10)
     parser.add_argument("--render", type=bool, default=False)
 
-    parser.add_argument("--saveinterval", type=int, default=50_000) 
+    parser.add_argument("--saveinterval", type=int, default=5_000) 
     parser.add_argument("--logdir", type=str, default="logs/", help="log directory path")
     parser.add_argument("--savedir", type=str, default="save-dir/", help="save directory path")
     

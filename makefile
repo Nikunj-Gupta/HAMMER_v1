@@ -194,3 +194,7 @@ hammer-coil:
 	--expname hammer-test-run-coil \
 	--randomseed 10 \
 	--saveinterval 1000 
+
+gen_new_baseline_runs: 
+	clear 
+	python3 gen_baseline_runs.py 

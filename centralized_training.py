@@ -133,7 +133,7 @@ if __name__ == '__main__':
     parser.add_argument("--envname", type=str, default="cn")
     parser.add_argument("--nagents", type=int, default=3)
 
-    parser.add_argument("--maxepisodes", type=int, default=500_000) 
+    parser.add_argument("--maxepisodes", type=int, default=30_000) 
     parser.add_argument("--maxcycles", type=int, default=25) 
 
     parser.add_argument("--randomseed", type=int, default=10)
