@@ -62,7 +62,8 @@ def run(args):
     random_seed = args.randomseed 
     if random_seed:
         print("Random Seed: {}".format(random_seed))
-        env.seed(random_seed) 
+        # env.seed(random_seed) 
+        env.reset(seed=random_seed)
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
 
@@ -170,7 +171,7 @@ def run(args):
         
         actions = {agent : action_array[i] for i, agent in enumerate(agents)}  
 
-        next_obs, rewards, is_terminals, infos = env.step(actions) 
+        next_obs, rewards, _, is_terminals, infos = env.step(actions) 
         if args.partialobs: 
             next_obs = preprocess_obs(next_obs, limit=args.limit) 
         elif args.heterogeneity: 
@@ -257,7 +258,7 @@ if __name__ == '__main__':
     parser.add_argument("--maxepisodes", type=int, default=500_000) 
     parser.add_argument("--prevactions", type=int, default=0) 
     parser.add_argument("--partialobs", type=int, default=0) 
-    parser.add_argument("--sharedparams", type=int, default=1) 
+    parser.add_argument("--sharedparams", type=int, default=0) 
     parser.add_argument("--heterogeneity", type=int, default=0) 
     parser.add_argument("--limit", type=int, default=None) 
     parser.add_argument("--maxcycles", type=int, default=25) 

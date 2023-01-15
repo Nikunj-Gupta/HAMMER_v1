@@ -34,7 +34,8 @@ def run(args):
     random_seed = args.randomseed 
     if random_seed:
         print("Random Seed: {}".format(random_seed))
-        env.seed(random_seed) 
+        # env.seed(random_seed) 
+        env.reset(seed=random_seed) 
         torch.manual_seed(random_seed)
         np.random.seed(random_seed)
 
@@ -85,7 +86,7 @@ def run(args):
         
         actions = {agent : action_array[i] for i, agent in enumerate(agents)}  
 
-        next_obs, rewards, is_terminals, infos = env.step(actions) 
+        next_obs, rewards, _, is_terminals, infos = env.step(actions) 
         next_obs = np.array([next_obs[agent] for agent in next_obs]).reshape(-1) 
     
 

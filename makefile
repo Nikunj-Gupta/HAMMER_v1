@@ -170,3 +170,27 @@ sumgame-runs--3:
 	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 2 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
 	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 3 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
 	python3 hammer-number-guessing.py --nagents 3 --dru_toggle 1 --meslen 4 --randomseed 99 --envname newhammer2 --maxepisodes 100_000
+
+hammer-random: 
+	clear 
+	time python3 hammer-cn.py \
+	--config configs/2021/cn/hyperparams.yaml \
+	--nagents 3 \
+	--maxepisodes 100000 \
+	--expname hammer-test-run-random \
+	--hammer 1 \
+	--randomseed 10 \
+	--discretemes 0 \
+	--meslen 1 \
+	--saveinterval 1000 \
+	--randommes 1 
+
+hammer-coil: 
+	clear 
+	time python3 centralized_training.py \
+	--config configs/2021/cn/hyperparams.yaml \
+	--nagents 3 \
+	--maxepisodes 100000 \
+	--expname hammer-test-run-coil \
+	--randomseed 10 \
+	--saveinterval 1000 
