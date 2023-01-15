@@ -1,11 +1,21 @@
-import os 
-dumpdir = "runs/jan_2023/cn/" 
 
+import os, yaml 
+from pathlib import Path 
+from itertools import count 
+dumpdir = "runs/jan_2023/cn/" 
+if not os.path.isdir(dumpdir):
+    os.mkdir(dumpdir)
 fixed_text = "#!/bin/bash\n"\
-             "#SBATCH --mem=5000M\n"\
-             "#SBATCH --time=00-16:00\n"\
-             "#SBATCH --account=def-mtaylor3\n"\
-             "tensorboard --logdir=logs/ --host 0.0.0.0 &\n" 
+             "#SBATCH --nodes=1\n"\
+             "#SBATCH --cpus-per-task=16 \n"\
+             "#SBATCH --time=10:00:00\n"\
+             "#SBATCH --mem=40GB\n"\
+             "\n"\
+             "source ../venvs/hammer/bin/activate\n"\
+             "\n"\
+             "module load python/intel/3.8.6\n"\
+             "module load openmpi/intel/4.0.5\n"\
+             "\n" 
 
 for experiment in ["randommes", "coil"]: 
     for nagents in [3, 5, 7, 10]: 
