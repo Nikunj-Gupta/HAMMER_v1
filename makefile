@@ -195,6 +195,19 @@ hammer-coil:
 	--randomseed 10 \
 	--saveinterval 1000 
 
+hammer-v1: 
+	clear 
+	time python3 hammer-cn.py \
+	--config configs/2021/cn/hyperparams.yaml \
+	--nagents 3 \
+	--maxepisodes 100000 \
+	--expname hammer-test-run-v1 \
+	--hammer 1 \
+	--randomseed 10 \
+	--discretemes 0 \
+	--meslen 1 \
+	--saveinterval 1000 \
+	--randommes 0 
 gen_new_baseline_runs: 
 	clear 
 	python3 gen_baseline_runs.py 
